@@ -1,0 +1,27 @@
+# Visual Studio build artifacts and cache
+.vs/
+Build/
+x64/
+x86/
+Debug/
+Release/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# C++ Build outputs
+*.obj
+*.ilk
+*.pch
+*.pdb
+*.tlog
+*.lastbuildstate
+*.idb
+*.log
+*.recipe
+*.ipch
+*.sdf
+*.opensdf
+*.db
+*.opendb
