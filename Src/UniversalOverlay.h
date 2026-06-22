@@ -50,6 +50,21 @@ namespace UniversalOverlay
     using RenderCallback = std::function<void()>;
     void RegisterRenderCallback(RenderCallback callback);
 
+    // Register a named ImGui floating window. Floating windows are rendered every
+    // frame; unpinned windows are only visible while the menu is open.
+    using FloatingWindowCallback = std::function<void(bool menuOpen)>;
+    void RegisterFloatingWindow(
+        const std::string& name,
+        FloatingWindowCallback callback,
+        bool defaultOpen = false,
+        bool defaultPinned = false,
+        float backgroundAlpha = 0.55f);
+    void SetFloatingWindowOpen(const std::string& name, bool open);
+    void SetFloatingWindowPinned(const std::string& name, bool pinned);
+    bool IsFloatingWindowOpen(const std::string& name);
+    bool IsFloatingWindowPinned(const std::string& name);
+    void DrawFloatingWindows(bool menuOpen);
+
     // Config management API
     void RegisterConfigBool(const std::string& section, const std::string& key, bool* val);
     void RegisterConfigFloat(const std::string& section, const std::string& key, float* val, float defaultVal = 0.0f);
@@ -78,4 +93,3 @@ namespace UniversalOverlay
     bool EnableHook(void* target);
     bool DisableHook(void* target);
 }
-

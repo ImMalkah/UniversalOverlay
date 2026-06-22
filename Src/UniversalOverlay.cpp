@@ -7,6 +7,8 @@
 #include "ConfigSystem.h"
 #include "Log.h"
 
+#include <utility>
+
 namespace UniversalOverlay
 {
     bool Initialize(GraphicsAPI api)
@@ -81,6 +83,41 @@ namespace UniversalOverlay
     void RegisterRenderCallback(RenderCallback callback)
     {
         State::renderCallback = callback;
+    }
+
+    void RegisterFloatingWindow(
+        const std::string& name,
+        FloatingWindowCallback callback,
+        bool defaultOpen,
+        bool defaultPinned,
+        float backgroundAlpha)
+    {
+        UIRegistry::RegisterFloatingWindow(name, std::move(callback), defaultOpen, defaultPinned, backgroundAlpha);
+    }
+
+    void SetFloatingWindowOpen(const std::string& name, bool open)
+    {
+        UIRegistry::SetFloatingWindowOpen(name, open);
+    }
+
+    void SetFloatingWindowPinned(const std::string& name, bool pinned)
+    {
+        UIRegistry::SetFloatingWindowPinned(name, pinned);
+    }
+
+    bool IsFloatingWindowOpen(const std::string& name)
+    {
+        return UIRegistry::IsFloatingWindowOpen(name);
+    }
+
+    bool IsFloatingWindowPinned(const std::string& name)
+    {
+        return UIRegistry::IsFloatingWindowPinned(name);
+    }
+
+    void DrawFloatingWindows(bool menuOpen)
+    {
+        UIRegistry::DrawFloatingWindows(menuOpen);
     }
 
     void RegisterConfigBool(const std::string& section, const std::string& key, bool* val)

@@ -3,6 +3,7 @@
 #include "Log.h"
 #include "Renderer.h"
 #include "Menu.h"
+#include "UIRegistry.h"
 #include "CursorHook.h"
 #include "WndProcHook.h"
 #include "MinHook.h"
@@ -146,6 +147,7 @@ namespace UniversalOverlay
             {
                 Menu::Draw();
             }
+            UIRegistry::DrawFloatingWindows(State::menuOpen);
             Renderer::EndFrame();
 
             SyncMenuState();
@@ -183,6 +185,7 @@ namespace UniversalOverlay
             {
                 Menu::Draw();
             }
+            UIRegistry::DrawFloatingWindows(State::menuOpen);
             Renderer::EndFrame();
 
             SyncMenuState();
@@ -203,21 +206,51 @@ namespace UniversalOverlay
         HRESULT APIENTRY hkPresentD3D11(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
         {
             HookRefGuard guard;
+            if (!swapChain || !oPresentD3D11)
+                return DXGI_ERROR_INVALID_CALL;
+
             if (!Renderer::IsInitialized())
             {
-                DXGI_SWAP_CHAIN_DESC desc;
-                swapChain->GetDesc(&desc);
+                DXGI_SWAP_CHAIN_DESC desc = {};
+                if (FAILED(swapChain->GetDesc(&desc)))
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+
                 HWND hwnd = desc.OutputWindow;
 
                 ID3D11Device* device = nullptr;
-                swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device));
+                HRESULT hr = swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device));
+                if (FAILED(hr) || !device)
+                {
+                    static bool loggedDeviceFailure = false;
+                    if (!loggedDeviceFailure)
+                    {
+                        Log::Debug("D3D11 Present skipped: swap chain does not expose ID3D11Device. HRESULT=0x%08X", static_cast<unsigned int>(hr));
+                        loggedDeviceFailure = true;
+                    }
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+                }
+
                 ID3D11DeviceContext* context = nullptr;
                 device->GetImmediateContext(&context);
+                if (!context)
+                {
+                    device->Release();
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+                }
 
                 State::windowHandle = hwnd;
-                Renderer::Initialize(hwnd, GraphicsAPI::D3D11, device, context);
-                InstallWndProcHook(hwnd);
-                ApplyMenuState();
+                if (!Renderer::Initialize(hwnd, GraphicsAPI::D3D11, device, context))
+                {
+                    context->Release();
+                    device->Release();
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+                }
+
+                if (hwnd)
+                {
+                    InstallWndProcHook(hwnd);
+                    ApplyMenuState();
+                }
 
                 device->Release();
                 context->Release();
@@ -226,38 +259,55 @@ namespace UniversalOverlay
             if (!g_d3d11RenderTargetView)
             {
                 ID3D11Device* device = nullptr;
-                swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device));
+                if (FAILED(swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device))) || !device)
+                    return oPresentD3D11(swapChain, syncInterval, flags);
 
                 ID3D11Texture2D* backBuffer = nullptr;
-                swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer));
-                device->CreateRenderTargetView(backBuffer, nullptr, &g_d3d11RenderTargetView);
+                HRESULT hr = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer));
+                if (FAILED(hr) || !backBuffer)
+                {
+                    device->Release();
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+                }
+
+                hr = device->CreateRenderTargetView(backBuffer, nullptr, &g_d3d11RenderTargetView);
                 
                 backBuffer->Release();
                 device->Release();
+
+                if (FAILED(hr) || !g_d3d11RenderTargetView)
+                    return oPresentD3D11(swapChain, syncInterval, flags);
             }
 
             HandleMenuHotkey();
             SyncMenuState();
             ApplyCursorState(State::windowHandle, State::menuOpen);
 
-            Renderer::BeginFrame();
-            if (State::renderCallback)
-            {
-                State::renderCallback();
-            }
-            if (State::menuOpen)
-            {
-                Menu::Draw();
-            }
-
             if (g_d3d11RenderTargetView)
             {
                 ID3D11Device* device = nullptr;
-                swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device));
+                if (FAILED(swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device))) || !device)
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+
                 ID3D11DeviceContext* context = nullptr;
                 device->GetImmediateContext(&context);
+                if (!context)
+                {
+                    device->Release();
+                    return oPresentD3D11(swapChain, syncInterval, flags);
+                }
 
                 context->OMSetRenderTargets(1, &g_d3d11RenderTargetView, nullptr);
+                Renderer::BeginFrame();
+                if (State::renderCallback)
+                {
+                    State::renderCallback();
+                }
+                if (State::menuOpen)
+                {
+                    Menu::Draw();
+                }
+                UIRegistry::DrawFloatingWindows(State::menuOpen);
                 Renderer::EndFrame();
 
                 context->Release();
@@ -295,29 +345,52 @@ namespace UniversalOverlay
         HRESULT APIENTRY hkPresentD3D12(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
         {
             HookRefGuard guard;
+            if (!swapChain || !oPresentD3D12)
+                return DXGI_ERROR_INVALID_CALL;
+
             if (!g_d3d12CommandQueue)
                 return oPresentD3D12(swapChain, syncInterval, flags);
 
             ID3D12Device* device = nullptr;
-            swapChain->GetDevice(__uuidof(ID3D12Device), reinterpret_cast<void**>(&device));
+            HRESULT hr = swapChain->GetDevice(__uuidof(ID3D12Device), reinterpret_cast<void**>(&device));
+            if (FAILED(hr) || !device)
+                return oPresentD3D12(swapChain, syncInterval, flags);
 
             if (!Renderer::IsInitialized())
             {
-                DXGI_SWAP_CHAIN_DESC desc;
-                swapChain->GetDesc(&desc);
+                DXGI_SWAP_CHAIN_DESC desc = {};
+                if (FAILED(swapChain->GetDesc(&desc)) || desc.BufferCount == 0)
+                {
+                    device->Release();
+                    return oPresentD3D12(swapChain, syncInterval, flags);
+                }
+
                 HWND hwnd = desc.OutputWindow;
 
                 State::windowHandle = hwnd;
-                Renderer::Initialize(hwnd, GraphicsAPI::D3D12, device, swapChain);
-                InstallWndProcHook(hwnd);
-                ApplyMenuState();
+                if (!Renderer::Initialize(hwnd, GraphicsAPI::D3D12, device, swapChain, g_d3d12CommandQueue))
+                {
+                    device->Release();
+                    return oPresentD3D12(swapChain, syncInterval, flags);
+                }
+
+                if (hwnd)
+                {
+                    InstallWndProcHook(hwnd);
+                    ApplyMenuState();
+                }
 
                 // Allocate RTV Descriptor Heap
                 D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
                 rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
                 rtvHeapDesc.NumDescriptors = desc.BufferCount;
                 rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-                device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_d3d12RtvDescriptorHeap));
+                if (FAILED(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_d3d12RtvDescriptorHeap))) || !g_d3d12RtvDescriptorHeap)
+                {
+                    Renderer::Shutdown();
+                    device->Release();
+                    return oPresentD3D12(swapChain, syncInterval, flags);
+                }
 
                 UINT rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
                 D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = g_d3d12RtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -328,15 +401,37 @@ namespace UniversalOverlay
                 for (UINT i = 0; i < desc.BufferCount; i++)
                 {
                     g_d3d12RtvHandles[i] = rtvHandle;
-                    swapChain->GetBuffer(i, IID_PPV_ARGS(&g_d3d12BackBuffers[i]));
+                    if (FAILED(swapChain->GetBuffer(i, IID_PPV_ARGS(&g_d3d12BackBuffers[i]))) || !g_d3d12BackBuffers[i])
+                    {
+                        Renderer::Shutdown();
+                        device->Release();
+                        return oPresentD3D12(swapChain, syncInterval, flags);
+                    }
                     device->CreateRenderTargetView(g_d3d12BackBuffers[i], nullptr, rtvHandle);
                     rtvHandle.ptr += rtvDescriptorSize;
                 }
 
                 // Command allocator and list
-                device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_d3d12CommandAllocator));
-                device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_d3d12CommandAllocator, nullptr, IID_PPV_ARGS(&g_d3d12CommandList));
+                if (FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&g_d3d12CommandAllocator))) || !g_d3d12CommandAllocator)
+                {
+                    Renderer::Shutdown();
+                    device->Release();
+                    return oPresentD3D12(swapChain, syncInterval, flags);
+                }
+
+                if (FAILED(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, g_d3d12CommandAllocator, nullptr, IID_PPV_ARGS(&g_d3d12CommandList))) || !g_d3d12CommandList)
+                {
+                    Renderer::Shutdown();
+                    device->Release();
+                    return oPresentD3D12(swapChain, syncInterval, flags);
+                }
                 g_d3d12CommandList->Close();
+            }
+
+            if (!g_d3d12CommandAllocator || !g_d3d12CommandList || g_d3d12BackBuffers.empty() || g_d3d12RtvHandles.empty())
+            {
+                device->Release();
+                return oPresentD3D12(swapChain, syncInterval, flags);
             }
 
             HandleMenuHotkey();
@@ -344,11 +439,27 @@ namespace UniversalOverlay
             ApplyCursorState(State::windowHandle, State::menuOpen);
 
             // Execute frame rendering commands
-            g_d3d12CommandAllocator->Reset();
-            g_d3d12CommandList->Reset(g_d3d12CommandAllocator, nullptr);
+            if (FAILED(g_d3d12CommandAllocator->Reset()) || FAILED(g_d3d12CommandList->Reset(g_d3d12CommandAllocator, nullptr)))
+            {
+                device->Release();
+                return oPresentD3D12(swapChain, syncInterval, flags);
+            }
 
-            IDXGISwapChain3* swapChain3 = reinterpret_cast<IDXGISwapChain3*>(swapChain);
+            IDXGISwapChain3* swapChain3 = nullptr;
+            if (FAILED(swapChain->QueryInterface(IID_PPV_ARGS(&swapChain3))) || !swapChain3)
+            {
+                device->Release();
+                return oPresentD3D12(swapChain, syncInterval, flags);
+            }
+
             UINT backBufferIndex = swapChain3->GetCurrentBackBufferIndex();
+            swapChain3->Release();
+
+            if (backBufferIndex >= g_d3d12BackBuffers.size() || backBufferIndex >= g_d3d12RtvHandles.size() || !g_d3d12BackBuffers[backBufferIndex])
+            {
+                device->Release();
+                return oPresentD3D12(swapChain, syncInterval, flags);
+            }
 
             // Transition buffer from Present to RenderTarget
             D3D12_RESOURCE_BARRIER barrier = {};
@@ -371,6 +482,7 @@ namespace UniversalOverlay
             {
                 Menu::Draw();
             }
+            UIRegistry::DrawFloatingWindows(State::menuOpen);
             Renderer::EndFrame(g_d3d12CommandList);
 
             // Transition buffer back to Present

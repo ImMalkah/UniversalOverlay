@@ -323,6 +323,12 @@ namespace UniversalOverlay
             DrawKeybindControl("Menu Toggle", State::menuToggleKey, State::waitingForMenuToggleKey);
             DrawKeybindControl("Unload Module", State::unloadKey, State::waitingForUnloadKey);
 
+            if (ImGui::Button("Unload now"))
+            {
+                State::shouldUnload = true;
+                Log::Debug("Unload requested from settings button.");
+            }
+
             ImGui::Spacing();
             ImGui::Separator();
 
