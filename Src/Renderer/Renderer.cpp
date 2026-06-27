@@ -1,6 +1,6 @@
-#include "Renderer.h"
-#include "CoreState.h"
-#include "Log.h"
+#include "Renderer/Renderer.h"
+#include "Core/CoreState.h"
+#include "Core/Log.h"
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"

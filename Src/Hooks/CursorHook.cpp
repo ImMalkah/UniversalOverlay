@@ -1,5 +1,5 @@
-#include "CursorHook.h"
-#include "Log.h"
+#include "Hooks/CursorHook.h"
+#include "Core/Log.h"
 #include "MinHook.h"
 
 namespace UniversalOverlay

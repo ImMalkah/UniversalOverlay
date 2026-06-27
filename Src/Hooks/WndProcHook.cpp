@@ -1,6 +1,6 @@
-#include "WndProcHook.h"
-#include "CoreState.h"
-#include "Log.h"
+#include "Hooks/WndProcHook.h"
+#include "Core/CoreState.h"
+#include "Core/Log.h"
 #include "UniversalOverlay.h"
 #include "imgui.h"
 

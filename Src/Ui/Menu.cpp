@@ -1,8 +1,8 @@
-#include "Menu.h"
-#include "CoreState.h"
-#include "UIRegistry.h"
-#include "ConfigSystem.h"
-#include "Log.h"
+#include "Ui/Menu.h"
+#include "Core/CoreState.h"
+#include "Ui/UIRegistry.h"
+#include "Core/ConfigSystem.h"
+#include "Core/Log.h"
 #include "imgui.h"
 
 #include <cstdio>

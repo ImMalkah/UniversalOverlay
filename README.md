@@ -35,17 +35,23 @@ UniversalOverlay/
 ├── External/                # Third-party libraries
 │   ├── ImGui/               # Dear ImGui core & backends (Win32, DX9, DX11, DX12, OpenGL3)
 │   └── MinHook/             # MinHook headers & prebuilt static libraries (.lib)
-├── Src/                     # Core library implementation
-│   ├── UniversalOverlay.h   # Public API boundary & helper structures
-│   ├── CoreState.h/cpp      # Global SDK context, hotkeys, and tracking flags
-│   ├── Hooks.h/cpp          # MinHook API detour installers and handlers
-│   ├── Renderer.h/cpp       # Handles ImGui backend context initialization per API
-│   ├── Menu.h/cpp           # Layouts the SDK configuration tabs & keybind managers
-│   ├── ConfigSystem.h/cpp   # Reads/writes Registered configurations to INI files
-│   ├── UIRegistry.h/cpp     # Registers custom UI tabs dynamically
-│   ├── WndProcHook.h/cpp    # Handles raw window input dispatching to ImGui
-│   ├── CursorHook.h/cpp     # Manages cursor clip states, visibility, and cursor locks
-│   └── Log.h                # Simple logging macros
+├── Src/                     # Library implementation and public API
+│   ├── UniversalOverlay.h   # Public umbrella include for consumers
+│   ├── Core/                # Lifecycle, shared state, configuration, and logging
+│   │   ├── UniversalOverlayCore.cpp
+│   │   ├── CoreState.h/cpp
+│   │   ├── ConfigSystem.h/cpp
+│   │   └── Log.h
+│   ├── Hooks/               # MinHook detours, WndProc handling, and cursor state hooks
+│   │   ├── Hooks.h/cpp
+│   │   ├── WndProcHook.h/cpp
+│   │   └── CursorHook.h/cpp
+│   ├── Renderer/            # ImGui backend context initialization per graphics API
+│   │   ├── Renderer.h/cpp
+│   │   └── Backends/        # Reserved for renderer backend-specific source organization
+│   └── Ui/                  # Built-in menu layout and UI callback registry
+│       ├── Menu.h/cpp
+│       └── UIRegistry.h/cpp
 ├── UniversalOverlay.sln     # Visual Studio 2022 Solution
 └── UniversalOverlay.vcxproj # Project configuration file (C++23 static library target)
 ```

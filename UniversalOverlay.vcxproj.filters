@@ -1,33 +1,182 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{11E660DD-2707-4D6F-8E51-C97320B76C91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Hooks">
+      <UniqueIdentifier>{D6802F04-6EC9-446C-9449-8C1B5805EC5B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{FF167C2E-2339-45D5-9E05-9C973BB3DA44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Renderer\Backends">
+      <UniqueIdentifier>{0D419C19-B90C-4F5C-A0A9-323C4B8A6330}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Ui">
+      <UniqueIdentifier>{31B17C96-D3F9-47FB-9DC2-FC020F0DD371}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{5D843232-214F-4562-9E2C-0143C3459D9F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Hooks">
+      <UniqueIdentifier>{22C2FD4D-28A0-4C3C-AB89-C16D0E4F2F8D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Renderer">
+      <UniqueIdentifier>{E7773882-BBE0-4B31-B8BD-81ECE7B75AFD}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Renderer\Backends">
+      <UniqueIdentifier>{68A9CA77-BA8D-45DC-B2F3-E030D9744CD0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Ui">
+      <UniqueIdentifier>{133132F6-268D-4F93-A0E0-18D797778E19}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\ImGui">
+      <UniqueIdentifier>{31AF40E9-74D8-4D07-93DE-D46622B99AE7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\ImGui\Backends">
+      <UniqueIdentifier>{7CDA836B-FAB4-4B3E-A289-84B97EB05B1D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\MinHook">
+      <UniqueIdentifier>{D92350D6-60F0-4B48-A9FD-20177EC35F56}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_dx11.h">
+      <Filter>External\ImGui\Backends</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_dx12.h">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_dx9.h">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_opengl3.h">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_opengl3_loader.h">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\Backends\imgui_impl_win32.h">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imconfig.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imgui.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imgui_internal.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imstb_rectpack.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imstb_textedit.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\ImGui\imstb_truetype.h">
+      <Filter>External\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\MinHook\include\MinHook.h">
+      <Filter>External\MinHook</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Core\ConfigSystem.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Core\CoreState.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Core\Log.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Hooks\CursorHook.h">
+      <Filter>Header Files\Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Hooks\Hooks.h">
+      <Filter>Header Files\Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Hooks\WndProcHook.h">
+      <Filter>Header Files\Hooks</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Renderer\Renderer.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Ui\Menu.h">
+      <Filter>Header Files\Ui</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Ui\UIRegistry.h">
+      <Filter>Header Files\Ui</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\UniversalOverlay.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="UniversalOverlay.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="External\ImGui\Backends\imgui_impl_dx11.cpp">
+      <Filter>External\ImGui\Backends</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="External\ImGui\Backends\imgui_impl_dx12.cpp">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\Backends\imgui_impl_dx9.cpp">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\Backends\imgui_impl_opengl3.cpp">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\Backends\imgui_impl_win32.cpp">
+      <Filter>External\ImGui\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\imgui.cpp">
+      <Filter>External\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\imgui_demo.cpp">
+      <Filter>External\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\imgui_draw.cpp">
+      <Filter>External\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\imgui_tables.cpp">
+      <Filter>External\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\ImGui\imgui_widgets.cpp">
+      <Filter>External\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Core\ConfigSystem.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Core\CoreState.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Core\UniversalOverlayCore.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Hooks\CursorHook.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Hooks\Hooks.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Hooks\WndProcHook.cpp">
+      <Filter>Source Files\Hooks</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Renderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Ui\Menu.cpp">
+      <Filter>Source Files\Ui</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Ui\UIRegistry.cpp">
+      <Filter>Source Files\Ui</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

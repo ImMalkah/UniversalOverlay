@@ -1,11 +1,11 @@
 #include "UniversalOverlay.h"
-#include "CoreState.h"
+#include "Core/CoreState.h"
 #include <MinHook.h>
-#include "Renderer.h"
-#include "Hooks.h"
-#include "UIRegistry.h"
-#include "ConfigSystem.h"
-#include "Log.h"
+#include "Renderer/Renderer.h"
+#include "Hooks/Hooks.h"
+#include "Ui/UIRegistry.h"
+#include "Core/ConfigSystem.h"
+#include "Core/Log.h"
 
 #include <utility>
 

@@ -168,16 +168,16 @@
     <ClInclude Include="External\ImGui\imstb_textedit.h" />
     <ClInclude Include="External\ImGui\imstb_truetype.h" />
     <ClInclude Include="External\MinHook\include\MinHook.h" />
-    <ClInclude Include="Src\ConfigSystem.h" />
-    <ClInclude Include="Src\CoreState.h" />
-    <ClInclude Include="Src\CursorHook.h" />
-    <ClInclude Include="Src\Hooks.h" />
-    <ClInclude Include="Src\Log.h" />
-    <ClInclude Include="Src\Menu.h" />
-    <ClInclude Include="Src\Renderer.h" />
-    <ClInclude Include="Src\UIRegistry.h" />
+    <ClInclude Include="Src\Core\ConfigSystem.h" />
+    <ClInclude Include="Src\Core\CoreState.h" />
+    <ClInclude Include="Src\Hooks\CursorHook.h" />
+    <ClInclude Include="Src\Hooks\Hooks.h" />
+    <ClInclude Include="Src\Core\Log.h" />
+    <ClInclude Include="Src\Ui\Menu.h" />
+    <ClInclude Include="Src\Renderer\Renderer.h" />
+    <ClInclude Include="Src\Ui\UIRegistry.h" />
     <ClInclude Include="Src\UniversalOverlay.h" />
-    <ClInclude Include="Src\WndProcHook.h" />
+    <ClInclude Include="Src\Hooks\WndProcHook.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="External\ImGui\Backends\imgui_impl_dx11.cpp" />
@@ -190,15 +190,15 @@
     <ClCompile Include="External\ImGui\imgui_draw.cpp" />
     <ClCompile Include="External\ImGui\imgui_tables.cpp" />
     <ClCompile Include="External\ImGui\imgui_widgets.cpp" />
-    <ClCompile Include="Src\ConfigSystem.cpp" />
-    <ClCompile Include="Src\CoreState.cpp" />
-    <ClCompile Include="Src\CursorHook.cpp" />
-    <ClCompile Include="Src\Hooks.cpp" />
-    <ClCompile Include="Src\Menu.cpp" />
-    <ClCompile Include="Src\Renderer.cpp" />
-    <ClCompile Include="Src\UIRegistry.cpp" />
-    <ClCompile Include="Src\UniversalOverlay.cpp" />
-    <ClCompile Include="Src\WndProcHook.cpp" />
+    <ClCompile Include="Src\Core\ConfigSystem.cpp" />
+    <ClCompile Include="Src\Core\CoreState.cpp" />
+    <ClCompile Include="Src\Hooks\CursorHook.cpp" />
+    <ClCompile Include="Src\Hooks\Hooks.cpp" />
+    <ClCompile Include="Src\Ui\Menu.cpp" />
+    <ClCompile Include="Src\Renderer\Renderer.cpp" />
+    <ClCompile Include="Src\Ui\UIRegistry.cpp" />
+    <ClCompile Include="Src\Core\UniversalOverlayCore.cpp" />
+    <ClCompile Include="Src\Hooks\WndProcHook.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
