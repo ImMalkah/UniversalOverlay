@@ -9,6 +9,7 @@
 #include "Hooks/WndProcHook.h"
 #include "MinHook.h"
 #include "Core/ConfigSystem.h"
+#include "UniversalOverlay.h"
 #include "imgui.h"
 #include "imgui_impl_dx9.h"
 #include "imgui_impl_dx11.h"
@@ -63,6 +64,47 @@ namespace UniversalOverlay
         static ID3D12GraphicsCommandList* g_d3d12CommandList = nullptr;
         static ID3D12CommandAllocator* g_d3d12CommandAllocator = nullptr;
 
+        static void WaitForD3D12QueueIdle()
+        {
+            if (!g_d3d12CommandQueue)
+                return;
+
+            ID3D12Device* device = nullptr;
+            if (FAILED(g_d3d12CommandQueue->GetDevice(IID_PPV_ARGS(&device))) || !device)
+                return;
+
+            ID3D12Fence* fence = nullptr;
+            if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence))) || !fence)
+            {
+                device->Release();
+                return;
+            }
+
+            HANDLE eventHandle = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+            if (!eventHandle)
+            {
+                fence->Release();
+                device->Release();
+                return;
+            }
+
+            constexpr UINT64 fenceValue = 1;
+            if (SUCCEEDED(g_d3d12CommandQueue->Signal(fence, fenceValue)))
+            {
+                if (fence->GetCompletedValue() < fenceValue &&
+                    SUCCEEDED(fence->SetEventOnCompletion(fenceValue, eventHandle)))
+                {
+                    const DWORD waitResult = WaitForSingleObject(eventHandle, 2000);
+                    if (waitResult != WAIT_OBJECT_0)
+                        Log::Debug("Timed out waiting for DX12 queue idle during shutdown.");
+                }
+            }
+
+            CloseHandle(eventHandle);
+            fence->Release();
+            device->Release();
+        }
+
         struct HookRefGuard
         {
             HookRefGuard() { State::hookRefCount++; }
@@ -116,9 +158,44 @@ namespace UniversalOverlay
             if (unloadDown && !unloadWasDown)
             {
                 Log::Debug("Unload hotkey detected!");
-                State::shouldUnload = true;
+                RequestUnload();
             }
             unloadWasDown = unloadDown;
+        }
+
+        static bool BeginOverlayFrameIfActive(HWND hwnd)
+        {
+            HandleMenuHotkey();
+            SyncMenuState();
+
+            if (State::shouldUnload.load())
+            {
+                State::menuOpen = false;
+                ApplyMenuState();
+                ApplyCursorState(hwnd, false);
+                return false;
+            }
+
+            ApplyCursorState(hwnd, State::menuOpen);
+            return true;
+        }
+
+        static void DrawOverlayFrame(void* commandList = nullptr)
+        {
+            Renderer::BeginFrame();
+            if (!State::shouldUnload.load() && State::renderCallback)
+            {
+                State::renderCallback();
+            }
+            if (!State::shouldUnload.load() && State::menuOpen)
+            {
+                Menu::Draw();
+            }
+            if (!State::shouldUnload.load())
+            {
+                UIRegistry::DrawFloatingWindows(State::menuOpen);
+            }
+            Renderer::EndFrame(commandList);
         }
 
         // OpenGL SwapBuffers Hook
@@ -137,21 +214,10 @@ namespace UniversalOverlay
                 ApplyMenuState();
             }
 
-            HandleMenuHotkey();
-            SyncMenuState();
-            ApplyCursorState(hwnd, State::menuOpen);
+            if (!BeginOverlayFrameIfActive(hwnd))
+                return oWglSwapBuffers(hdc);
 
-            Renderer::BeginFrame();
-            if (State::renderCallback)
-            {
-                State::renderCallback();
-            }
-            if (State::menuOpen)
-            {
-                Menu::Draw();
-            }
-            UIRegistry::DrawFloatingWindows(State::menuOpen);
-            Renderer::EndFrame();
+            DrawOverlayFrame();
 
             SyncMenuState();
 
@@ -175,21 +241,10 @@ namespace UniversalOverlay
                 ApplyMenuState();
             }
 
-            HandleMenuHotkey();
-            SyncMenuState();
-            ApplyCursorState(State::windowHandle, State::menuOpen);
+            if (!BeginOverlayFrameIfActive(State::windowHandle))
+                return oEndSceneD3D9(device);
 
-            Renderer::BeginFrame();
-            if (State::renderCallback)
-            {
-                State::renderCallback();
-            }
-            if (State::menuOpen)
-            {
-                Menu::Draw();
-            }
-            UIRegistry::DrawFloatingWindows(State::menuOpen);
-            Renderer::EndFrame();
+            DrawOverlayFrame();
 
             SyncMenuState();
 
@@ -282,9 +337,8 @@ namespace UniversalOverlay
                     return oPresentD3D11(swapChain, syncInterval, flags);
             }
 
-            HandleMenuHotkey();
-            SyncMenuState();
-            ApplyCursorState(State::windowHandle, State::menuOpen);
+            if (!BeginOverlayFrameIfActive(State::windowHandle))
+                return oPresentD3D11(swapChain, syncInterval, flags);
 
             if (g_d3d11RenderTargetView)
             {
@@ -301,17 +355,7 @@ namespace UniversalOverlay
                 }
 
                 context->OMSetRenderTargets(1, &g_d3d11RenderTargetView, nullptr);
-                Renderer::BeginFrame();
-                if (State::renderCallback)
-                {
-                    State::renderCallback();
-                }
-                if (State::menuOpen)
-                {
-                    Menu::Draw();
-                }
-                UIRegistry::DrawFloatingWindows(State::menuOpen);
-                Renderer::EndFrame();
+                DrawOverlayFrame();
 
                 context->Release();
                 device->Release();
@@ -437,9 +481,11 @@ namespace UniversalOverlay
                 return oPresentD3D12(swapChain, syncInterval, flags);
             }
 
-            HandleMenuHotkey();
-            SyncMenuState();
-            ApplyCursorState(State::windowHandle, State::menuOpen);
+            if (!BeginOverlayFrameIfActive(State::windowHandle))
+            {
+                device->Release();
+                return oPresentD3D12(swapChain, syncInterval, flags);
+            }
 
             // Execute frame rendering commands
             if (FAILED(g_d3d12CommandAllocator->Reset()) || FAILED(g_d3d12CommandList->Reset(g_d3d12CommandAllocator, nullptr)))
@@ -476,17 +522,7 @@ namespace UniversalOverlay
 
             g_d3d12CommandList->OMSetRenderTargets(1, &g_d3d12RtvHandles[backBufferIndex], FALSE, nullptr);
 
-            Renderer::BeginFrame();
-            if (State::renderCallback)
-            {
-                State::renderCallback();
-            }
-            if (State::menuOpen)
-            {
-                Menu::Draw();
-            }
-            UIRegistry::DrawFloatingWindows(State::menuOpen);
-            Renderer::EndFrame(g_d3d12CommandList);
+            DrawOverlayFrame(g_d3d12CommandList);
 
             // Transition buffer back to Present
             barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -693,6 +729,8 @@ namespace UniversalOverlay
             
             RemoveCursorHooks();
             RemoveWndProcHook();
+
+            WaitForD3D12QueueIdle();
 
             // Clean up graphics objects
             if (g_d3d11RenderTargetView)

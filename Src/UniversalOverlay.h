@@ -28,6 +28,9 @@ namespace UniversalOverlay
     // Check if the DLL should unload
     bool ShouldUnload();
 
+    // Request a clean overlay unload and immediately close/disarm menu input.
+    void RequestUnload();
+
     // Check if the menu is currently open/visible
     bool IsMenuOpen();
 

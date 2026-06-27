@@ -76,6 +76,22 @@ namespace UniversalOverlay
         return State::shouldUnload;
     }
 
+    void RequestUnload()
+    {
+        const bool alreadyRequested = State::shouldUnload.exchange(true);
+        if (!alreadyRequested)
+            Log::Debug("Unload requested.");
+
+        if (State::menuOpen)
+            ConfigSystem::MarkDirty();
+
+        State::menuOpen = false;
+        State::waitingForMenuToggleKey = false;
+        State::waitingForUnloadKey = false;
+        State::keyCaptureWaitingForRelease = false;
+        Renderer::SetDrawCursor(false);
+    }
+
     bool IsMenuOpen()
     {
         return State::menuOpen;

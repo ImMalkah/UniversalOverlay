@@ -40,7 +40,8 @@ namespace UniversalOverlay
         if (!State::shouldUnload.load())
             Log::Debug("Unload hotkey detected from WndProc.");
 
-        State::shouldUnload = true;
+        RequestUnload();
+        g_menuOpenForWndProc = false;
     }
 
     void SetMenuOpenForWndProc(bool open)

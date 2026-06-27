@@ -4,6 +4,7 @@
 #include "Ui/UIRegistry.h"
 #include "Core/ConfigSystem.h"
 #include "Core/Log.h"
+#include "UniversalOverlay.h"
 #include "imgui.h"
 
 #include <cmath>
@@ -358,8 +359,8 @@ namespace UniversalOverlay
             ImGui::Text("Danger Zone");
             if (DrawDangerButton("Emergency Unload"))
             {
-                State::shouldUnload = true;
                 Log::Debug("Emergency unload requested from SDK debug button.");
+                RequestUnload();
             }
         }
 
