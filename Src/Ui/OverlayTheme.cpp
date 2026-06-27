@@ -1,6 +1,9 @@
 #include "Ui/OverlayTheme.h"
 
+#include "Core/ConfigSystem.h"
+
 #include <algorithm>
+#include <string>
 
 namespace UniversalOverlay::Ui
 {
@@ -12,6 +15,32 @@ namespace UniversalOverlay::Ui
         {
             return static_cast<int>(color);
         }
+
+        static constexpr const char* kColorLabels[] = {
+            "Text",
+            "Text muted",
+            "Surface",
+            "Surface raised",
+            "Border",
+            "Accent",
+            "Success",
+            "Warning",
+            "Danger",
+            "Disabled"
+        };
+
+        static constexpr const char* kColorKeys[] = {
+            "Text",
+            "TextMuted",
+            "Surface",
+            "SurfaceRaised",
+            "Border",
+            "Accent",
+            "Success",
+            "Warning",
+            "Danger",
+            "Disabled"
+        };
 
         ImVec4 WithAlpha(ImVec4 color, float alphaScale)
         {
@@ -140,6 +169,7 @@ namespace UniversalOverlay::Ui
     void ApplyThemePreset(const OverlayThemePreset& preset)
     {
         ApplyTheme(preset.theme);
+        ConfigSystem::MarkDirty();
     }
 
     const OverlayTheme& GetTheme()
@@ -152,14 +182,50 @@ namespace UniversalOverlay::Ui
         return g_theme;
     }
 
+    void RegisterThemeConfig()
+    {
+        const OverlayTheme defaults = MakeTacticalDarkTheme();
+
+        for (int index = 0; index < ThemeColorIndex(ThemeColor::Count); ++index)
+        {
+            const std::string prefix = std::string(kColorKeys[index]);
+            ConfigSystem::RegisterFloat("Theme.Colors", prefix + "R", &g_theme.colors[index].x, defaults.colors[index].x);
+            ConfigSystem::RegisterFloat("Theme.Colors", prefix + "G", &g_theme.colors[index].y, defaults.colors[index].y);
+            ConfigSystem::RegisterFloat("Theme.Colors", prefix + "B", &g_theme.colors[index].z, defaults.colors[index].z);
+            ConfigSystem::RegisterFloat("Theme.Colors", prefix + "A", &g_theme.colors[index].w, defaults.colors[index].w);
+        }
+
+        ConfigSystem::RegisterFloat("Theme", "WindowRounding", &g_theme.windowRounding, defaults.windowRounding);
+        ConfigSystem::RegisterFloat("Theme", "FrameRounding", &g_theme.frameRounding, defaults.frameRounding);
+        ConfigSystem::RegisterFloat("Theme", "ChipRounding", &g_theme.chipRounding, defaults.chipRounding);
+        ConfigSystem::RegisterFloat("Theme", "MeterRounding", &g_theme.meterRounding, defaults.meterRounding);
+        ConfigSystem::RegisterFloat("Theme", "BorderSize", &g_theme.borderSize, defaults.borderSize);
+        ConfigSystem::RegisterFloat("Theme", "WindowAlpha", &g_theme.windowAlpha, defaults.windowAlpha);
+        ConfigSystem::RegisterFloat("Theme", "WindowPaddingX", &g_theme.windowPadding.x, defaults.windowPadding.x);
+        ConfigSystem::RegisterFloat("Theme", "WindowPaddingY", &g_theme.windowPadding.y, defaults.windowPadding.y);
+        ConfigSystem::RegisterFloat("Theme", "ItemSpacingX", &g_theme.itemSpacing.x, defaults.itemSpacing.x);
+        ConfigSystem::RegisterFloat("Theme", "ItemSpacingY", &g_theme.itemSpacing.y, defaults.itemSpacing.y);
+        ConfigSystem::RegisterFloat("Theme", "RowHeight", &g_theme.rowHeight, defaults.rowHeight);
+        ConfigSystem::RegisterFloat("Theme", "MeterHeight", &g_theme.meterHeight, defaults.meterHeight);
+        ConfigSystem::RegisterFloat("Theme", "ChipHeight", &g_theme.chipHeight, defaults.chipHeight);
+        ConfigSystem::RegisterFloat("Theme", "SidebarWidth", &g_theme.sidebarWidth, defaults.sidebarWidth);
+
+        ConfigSystem::RegisterPostLoadCallback("UniversalOverlay.Theme", []()
+        {
+            ApplyTheme(g_theme);
+        });
+    }
+
     void SetTheme(const OverlayTheme& theme)
     {
         ApplyTheme(theme);
+        ConfigSystem::MarkDirty();
     }
 
     void ResetTheme()
     {
         ApplyTheme(MakeTacticalDarkTheme());
+        ConfigSystem::MarkDirty();
     }
 
     ImU32 ColorU32(ThemeColor color, float alphaScale)
@@ -183,19 +249,6 @@ namespace UniversalOverlay::Ui
         bool changed = false;
         ImGui::PushID(id != nullptr ? id : "OverlayThemeEditor");
 
-        static constexpr const char* kColorNames[] = {
-            "Text",
-            "Text muted",
-            "Surface",
-            "Surface raised",
-            "Border",
-            "Accent",
-            "Success",
-            "Warning",
-            "Danger",
-            "Disabled"
-        };
-
         if (ImGui::BeginTable("ThemeColors", 2, ImGuiTableFlags_SizingStretchProp | ImGuiTableFlags_RowBg))
         {
             ImGui::TableSetupColumn("Token", ImGuiTableColumnFlags_WidthFixed, 120.0f);
@@ -204,9 +257,9 @@ namespace UniversalOverlay::Ui
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::TextUnformatted(kColorNames[index]);
+                ImGui::TextUnformatted(kColorLabels[index]);
                 ImGui::TableSetColumnIndex(1);
-                changed |= ImGui::ColorEdit4(kColorNames[index], &g_theme.colors[index].x, ImGuiColorEditFlags_NoInputs);
+                changed |= ImGui::ColorEdit4(kColorLabels[index], &g_theme.colors[index].x, ImGuiColorEditFlags_NoInputs);
             }
             ImGui::EndTable();
         }
@@ -217,8 +270,11 @@ namespace UniversalOverlay::Ui
         changed |= ImGui::SliderFloat("Chip rounding", &g_theme.chipRounding, 0.0f, 16.0f, "%.1f");
         changed |= ImGui::SliderFloat("Meter rounding", &g_theme.meterRounding, 0.0f, 16.0f, "%.1f");
         changed |= ImGui::SliderFloat("Border size", &g_theme.borderSize, 0.0f, 3.0f, "%.1f");
+        changed |= ImGui::SliderFloat2("Window padding", &g_theme.windowPadding.x, 0.0f, 30.0f, "%.1f");
+        changed |= ImGui::SliderFloat2("Item spacing", &g_theme.itemSpacing.x, 0.0f, 24.0f, "%.1f");
         changed |= ImGui::SliderFloat("Row height", &g_theme.rowHeight, 20.0f, 44.0f, "%.1f");
         changed |= ImGui::SliderFloat("Meter height", &g_theme.meterHeight, 8.0f, 30.0f, "%.1f");
+        changed |= ImGui::SliderFloat("Chip height", &g_theme.chipHeight, 16.0f, 36.0f, "%.1f");
         changed |= ImGui::SliderFloat("Sidebar width", &g_theme.sidebarWidth, 96.0f, 280.0f, "%.1f");
 
         if (ImGui::Button("Reset theme"))
@@ -228,7 +284,10 @@ namespace UniversalOverlay::Ui
         }
 
         if (changed)
+        {
             ApplyTheme(g_theme);
+            ConfigSystem::MarkDirty();
+        }
 
         ImGui::PopID();
         return changed;

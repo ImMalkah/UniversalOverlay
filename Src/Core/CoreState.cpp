@@ -8,6 +8,11 @@ namespace UniversalOverlay
         std::atomic_bool initialized = false;
         bool menuOpen = false;
         HWND windowHandle = nullptr;
+        float menuPositionX = 80.0f;
+        float menuPositionY = 80.0f;
+        float menuSizeX = 550.0f;
+        float menuSizeY = 380.0f;
+        bool applySavedMenuPlacement = false;
         
         int menuToggleKey = VK_OEM_PERIOD;
         int unloadKey = VK_F1;

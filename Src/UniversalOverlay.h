@@ -64,6 +64,7 @@ namespace UniversalOverlay
     void RegisterConfigBool(const std::string& section, const std::string& key, bool* val);
     void RegisterConfigFloat(const std::string& section, const std::string& key, float* val, float defaultVal = 0.0f);
     void RegisterConfigInt(const std::string& section, const std::string& key, int* val, int defaultVal = 0);
+    void MarkConfigDirty();
 
     // Save and load configurations manually
     void SaveConfig(const std::wstring& filePath);

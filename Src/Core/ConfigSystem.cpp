@@ -2,12 +2,20 @@
 #include "Core/CoreState.h"
 #include "Core/Log.h"
 #include <Windows.h>
+#include <utility>
 
 namespace UniversalOverlay
 {
     namespace ConfigSystem
     {
+        struct PostLoadCallback
+        {
+            std::string id;
+            std::function<void()> callback;
+        };
+
         static std::vector<ConfigEntry> g_entries;
+        static std::vector<PostLoadCallback> g_postLoadCallbacks;
         static std::wstring g_configPath = L"overlay_config.ini";
 
         static std::wstring ToWString(const std::string& str)
@@ -19,6 +27,138 @@ namespace UniversalOverlay
             return wstrTo;
         }
 
+        static ConfigEntry* FindEntry(const std::string& section, const std::string& key, ConfigType type)
+        {
+            for (ConfigEntry& entry : g_entries)
+            {
+                if (entry.section == section && entry.key == key && entry.type == type)
+                    return &entry;
+            }
+
+            return nullptr;
+        }
+
+        static std::wstring SerializeEntryValue(const ConfigEntry& entry)
+        {
+            wchar_t buf[64] = {};
+
+            if (entry.type == ConfigType::Bool)
+            {
+                const bool val = *reinterpret_cast<bool*>(entry.ptr);
+                return val ? L"1" : L"0";
+            }
+
+            if (entry.type == ConfigType::Float)
+            {
+                const float val = *reinterpret_cast<float*>(entry.ptr);
+                swprintf_s(buf, L"%.4f", val);
+                return buf;
+            }
+
+            const int val = *reinterpret_cast<int*>(entry.ptr);
+            swprintf_s(buf, L"%d", val);
+            return buf;
+        }
+
+        static void UpdateLastSerializedValue(ConfigEntry& entry)
+        {
+            entry.lastSerializedValue = SerializeEntryValue(entry);
+            entry.hasLastSerializedValue = true;
+        }
+
+        static void ApplyDefaultValue(ConfigEntry& entry)
+        {
+            if (entry.type == ConfigType::Bool)
+                *reinterpret_cast<bool*>(entry.ptr) = entry.defaultBool;
+            else if (entry.type == ConfigType::Float)
+                *reinterpret_cast<float*>(entry.ptr) = entry.defaultFloat;
+            else if (entry.type == ConfigType::Int)
+                *reinterpret_cast<int*>(entry.ptr) = entry.defaultInt;
+        }
+
+        static void LoadRegisteredEntry(ConfigEntry& entry, const std::wstring& filePath)
+        {
+            std::wstring wSection = ToWString(entry.section);
+            std::wstring wKey = ToWString(entry.key);
+
+            if (entry.type == ConfigType::Bool)
+            {
+                int val = GetPrivateProfileIntW(
+                    wSection.c_str(),
+                    wKey.c_str(),
+                    entry.defaultBool ? 1 : 0,
+                    filePath.c_str()
+                );
+                *reinterpret_cast<bool*>(entry.ptr) = (val != 0);
+            }
+            else if (entry.type == ConfigType::Float)
+            {
+                wchar_t defaultBuf[64];
+                swprintf_s(defaultBuf, L"%.4f", entry.defaultFloat);
+
+                wchar_t buf[64] = {};
+                GetPrivateProfileStringW(
+                    wSection.c_str(),
+                    wKey.c_str(),
+                    defaultBuf,
+                    buf,
+                    sizeof(buf) / sizeof(wchar_t),
+                    filePath.c_str()
+                );
+                *reinterpret_cast<float*>(entry.ptr) = static_cast<float>(_wtof(buf));
+            }
+            else if (entry.type == ConfigType::Int)
+            {
+                int val = GetPrivateProfileIntW(
+                    wSection.c_str(),
+                    wKey.c_str(),
+                    entry.defaultInt,
+                    filePath.c_str()
+                );
+                *reinterpret_cast<int*>(entry.ptr) = val;
+            }
+        }
+
+        static void WriteRegisteredEntry(const ConfigEntry& entry, const std::wstring& filePath)
+        {
+            std::wstring wSection = ToWString(entry.section);
+            std::wstring wKey = ToWString(entry.key);
+            const std::wstring value = SerializeEntryValue(entry);
+            WritePrivateProfileStringW(wSection.c_str(), wKey.c_str(), value.c_str(), filePath.c_str());
+        }
+
+        static void RegisterEntry(ConfigEntry entry)
+        {
+            if (ConfigEntry* existing = FindEntry(entry.section, entry.key, entry.type))
+            {
+                existing->ptr = entry.ptr;
+                if (entry.type == ConfigType::Bool)
+                    existing->defaultBool = entry.defaultBool;
+                else if (entry.type == ConfigType::Float)
+                    existing->defaultFloat = entry.defaultFloat;
+                else if (entry.type == ConfigType::Int)
+                    existing->defaultInt = entry.defaultInt;
+
+                if (State::configLoaded)
+                    LoadRegisteredEntry(*existing, g_configPath);
+                else
+                    ApplyDefaultValue(*existing);
+
+                UpdateLastSerializedValue(*existing);
+                return;
+            }
+
+            g_entries.push_back(entry);
+            ConfigEntry& registered = g_entries.back();
+
+            if (State::configLoaded)
+                LoadRegisteredEntry(registered, g_configPath);
+            else
+                ApplyDefaultValue(registered);
+
+            UpdateLastSerializedValue(registered);
+        }
+
         void RegisterBool(const std::string& section, const std::string& key, bool* val, bool defaultVal)
         {
             ConfigEntry entry;
@@ -27,8 +167,7 @@ namespace UniversalOverlay
             entry.type = ConfigType::Bool;
             entry.ptr = val;
             entry.defaultBool = defaultVal;
-            g_entries.push_back(entry);
-            *val = defaultVal;
+            RegisterEntry(entry);
         }
 
         void RegisterFloat(const std::string& section, const std::string& key, float* val, float defaultVal)
@@ -39,8 +178,7 @@ namespace UniversalOverlay
             entry.type = ConfigType::Float;
             entry.ptr = val;
             entry.defaultFloat = defaultVal;
-            g_entries.push_back(entry);
-            *val = defaultVal;
+            RegisterEntry(entry);
         }
 
         void RegisterInt(const std::string& section, const std::string& key, int* val, int defaultVal)
@@ -51,37 +189,37 @@ namespace UniversalOverlay
             entry.type = ConfigType::Int;
             entry.ptr = val;
             entry.defaultInt = defaultVal;
-            g_entries.push_back(entry);
-            *val = defaultVal;
+            RegisterEntry(entry);
+        }
+
+        void RegisterPostLoadCallback(const std::string& id, std::function<void()> callback)
+        {
+            if (id.empty() || !callback)
+                return;
+
+            for (PostLoadCallback& registered : g_postLoadCallbacks)
+            {
+                if (registered.id == id)
+                {
+                    registered.callback = std::move(callback);
+                    if (State::configLoaded)
+                        registered.callback();
+                    return;
+                }
+            }
+
+            g_postLoadCallbacks.push_back({ id, std::move(callback) });
+            if (State::configLoaded)
+                g_postLoadCallbacks.back().callback();
         }
 
         void Save(const std::wstring& filePath)
         {
             g_configPath = filePath;
-            for (const auto& entry : g_entries)
+            for (ConfigEntry& entry : g_entries)
             {
-                std::wstring wSection = ToWString(entry.section);
-                std::wstring wKey = ToWString(entry.key);
-
-                if (entry.type == ConfigType::Bool)
-                {
-                    bool val = *reinterpret_cast<bool*>(entry.ptr);
-                    WritePrivateProfileStringW(wSection.c_str(), wKey.c_str(), val ? L"1" : L"0", filePath.c_str());
-                }
-                else if (entry.type == ConfigType::Float)
-                {
-                    float val = *reinterpret_cast<float*>(entry.ptr);
-                    wchar_t buf[64];
-                    swprintf_s(buf, L"%.4f", val);
-                    WritePrivateProfileStringW(wSection.c_str(), wKey.c_str(), buf, filePath.c_str());
-                }
-                else if (entry.type == ConfigType::Int)
-                {
-                    int val = *reinterpret_cast<int*>(entry.ptr);
-                    wchar_t buf[64];
-                    swprintf_s(buf, L"%d", val);
-                    WritePrivateProfileStringW(wSection.c_str(), wKey.c_str(), buf, filePath.c_str());
-                }
+                WriteRegisteredEntry(entry, filePath);
+                UpdateLastSerializedValue(entry);
             }
 
             State::configDirty = false;
@@ -91,65 +229,63 @@ namespace UniversalOverlay
         void Load(const std::wstring& filePath)
         {
             g_configPath = filePath;
-            for (const auto& entry : g_entries)
+            for (ConfigEntry& entry : g_entries)
             {
-                std::wstring wSection = ToWString(entry.section);
-                std::wstring wKey = ToWString(entry.key);
-
-                if (entry.type == ConfigType::Bool)
-                {
-                    int val = GetPrivateProfileIntW(
-                        wSection.c_str(),
-                        wKey.c_str(),
-                        entry.defaultBool ? 1 : 0,
-                        filePath.c_str()
-                    );
-                    *reinterpret_cast<bool*>(entry.ptr) = (val != 0);
-                }
-                else if (entry.type == ConfigType::Float)
-                {
-                    wchar_t defaultBuf[64];
-                    swprintf_s(defaultBuf, L"%.4f", entry.defaultFloat);
-
-                    wchar_t buf[64] = {};
-                    GetPrivateProfileStringW(
-                        wSection.c_str(),
-                        wKey.c_str(),
-                        defaultBuf,
-                        buf,
-                        sizeof(buf) / sizeof(wchar_t),
-                        filePath.c_str()
-                    );
-                    *reinterpret_cast<float*>(entry.ptr) = static_cast<float>(_wtof(buf));
-                }
-                else if (entry.type == ConfigType::Int)
-                {
-                    int val = GetPrivateProfileIntW(
-                        wSection.c_str(),
-                        wKey.c_str(),
-                        entry.defaultInt,
-                        filePath.c_str()
-                    );
-                    *reinterpret_cast<int*>(entry.ptr) = val;
-                }
+                LoadRegisteredEntry(entry, filePath);
+                UpdateLastSerializedValue(entry);
             }
 
             State::configLoaded = true;
             State::configDirty = false;
+            for (const PostLoadCallback& registered : g_postLoadCallbacks)
+            {
+                if (registered.callback)
+                    registered.callback();
+            }
+
             Log::Debug("Configurations successfully loaded.");
         }
 
         void SaveIfDirty(const std::wstring& filePath)
         {
+            RefreshDirtyState();
             if (State::configDirty)
             {
                 Save(filePath);
             }
         }
 
+        void MarkDirty()
+        {
+            State::configDirty = true;
+        }
+
+        void RefreshDirtyState()
+        {
+            if (State::configDirty)
+                return;
+
+            for (const ConfigEntry& entry : g_entries)
+            {
+                if (!entry.hasLastSerializedValue || entry.lastSerializedValue != SerializeEntryValue(entry))
+                {
+                    State::configDirty = true;
+                    return;
+                }
+            }
+        }
+
+        bool IsConfigLoaded()
+        {
+            return State::configLoaded;
+        }
+
         void Clear()
         {
             g_entries.clear();
+            g_postLoadCallbacks.clear();
+            State::configLoaded = false;
+            State::configDirty = false;
         }
 
         void SetConfigPath(const std::wstring& path)

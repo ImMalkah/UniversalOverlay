@@ -6,6 +6,7 @@
 #include "Core/Log.h"
 #include "imgui.h"
 
+#include <cmath>
 #include <cstdio>
 
 namespace UniversalOverlay
@@ -165,6 +166,29 @@ namespace UniversalOverlay
                 (GetAsyncKeyState(VK_XBUTTON2) & 0x8000);
         }
 
+        static bool HasMeaningfulDelta(float lhs, float rhs)
+        {
+            return std::fabs(lhs - rhs) > 0.5f;
+        }
+
+        static void CaptureMenuPlacement()
+        {
+            const ImVec2 position = ImGui::GetWindowPos();
+            const ImVec2 size = ImGui::GetWindowSize();
+
+            if (HasMeaningfulDelta(State::menuPositionX, position.x) ||
+                HasMeaningfulDelta(State::menuPositionY, position.y) ||
+                HasMeaningfulDelta(State::menuSizeX, size.x) ||
+                HasMeaningfulDelta(State::menuSizeY, size.y))
+            {
+                State::menuPositionX = position.x;
+                State::menuPositionY = position.y;
+                State::menuSizeX = size.x;
+                State::menuSizeY = size.y;
+                ConfigSystem::MarkDirty();
+            }
+        }
+
         static void ClearAsyncKeyState()
         {
             for (int key = 1; key < 256; key++)
@@ -210,7 +234,7 @@ namespace UniversalOverlay
             if (ImGui::Button(("Clear##" + std::string(label)).c_str()))
             {
                 keybindCode = 0;
-                State::configDirty = true;
+                ConfigSystem::MarkDirty();
                 State::settingsWarning = "";
             }
 
@@ -290,7 +314,7 @@ namespace UniversalOverlay
 
             keybindCode = finalCombo;
             waiting = false;
-            State::configDirty = true;
+            ConfigSystem::MarkDirty();
             Log::Debug("Keybind changed for %s to combo: %s (%d)", label, GetHotkeyComboName(keybindCode).c_str(), keybindCode);
         }
 
@@ -340,7 +364,7 @@ namespace UniversalOverlay
             {
                 State::menuToggleKey = VK_OEM_PERIOD;
                 State::unloadKey = VK_F1;
-                State::configDirty = true;
+                ConfigSystem::MarkDirty();
             }
 
             ImGui::Spacing();
@@ -349,6 +373,7 @@ namespace UniversalOverlay
             ImGui::Text("Configurations Management");
             if (ImGui::Button("Save Config"))
             {
+                ConfigSystem::RefreshDirtyState();
                 ConfigSystem::Save(ConfigSystem::GetConfigPath());
             }
             ImGui::SameLine();
@@ -366,13 +391,20 @@ namespace UniversalOverlay
 
         void Draw()
         {
-            ImGui::SetNextWindowSize(ImVec2(550.0f, 380.0f), ImGuiCond_FirstUseEver);
+            const ImGuiCond placementCondition = State::applySavedMenuPlacement ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
+            ImGui::SetNextWindowPos(ImVec2(State::menuPositionX, State::menuPositionY), placementCondition);
+            ImGui::SetNextWindowSize(ImVec2(State::menuSizeX, State::menuSizeY), placementCondition);
 
             if (!ImGui::Begin("Universal Overlay Menu", &State::menuOpen))
             {
+                CaptureMenuPlacement();
+                State::applySavedMenuPlacement = false;
                 ImGui::End();
                 return;
             }
+
+            CaptureMenuPlacement();
+            State::applySavedMenuPlacement = false;
 
             if (ImGui::BeginTabBar("UniversalMenuTabBar"))
             {

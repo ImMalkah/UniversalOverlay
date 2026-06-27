@@ -21,7 +21,7 @@ Powered by **Dear ImGui** and **MinHook**, it intercepts render loops, hijacks w
     *   **Direct3D 12** (detouring vtable `Present`, `ResizeBuffers`, & command queue `ExecuteCommandLists`)
 *   **Dynamic VTable Resolution**: Avoids hardcoded virtual table offsets by instantiating temporary dummy windows and graphics devices at startup to resolve runtime function addresses.
 *   **Seamless Input Hijacking**: Hooked `WndProc` redirects keyboard and mouse inputs to ImGui. Cursor hooks (`SetCursor`, `ClipCursor`, `ShowCursor`) are automatically detoured to release/re-lock the cursor when the menu state changes.
-*   **Built-in Configuration System**: Easily register `bool`, `float`, and `int` settings. Features automated disk serialization/deserialization to INI files and interactive menu keybind capturing.
+*   **Built-in Configuration System**: Easily register `bool`, `float`, and `int` settings. Features automated disk serialization/deserialization to INI files, interactive menu keybind capturing, built-in theme persistence, and menu/floating-window state persistence.
 *   **Robust & Safe Unloading**: Multi-threaded reference counters track active hook execution threads to guarantee a safe, crash-free hook removal and DLL unloading sequence.
 *   **Modern C++23**: Built on modern language features and practices.
 
@@ -95,10 +95,14 @@ void RenderESPConfigTab()
     ImGui::Text("ESP Configuration Settings");
     ImGui::Separator();
     
-    ImGui::Checkbox("Enable ESP Rendering", &g_esp_enabled);
-    ImGui::SliderFloat("Max Distance (m)", &g_esp_distance, 10.0f, 1000.0f, "%.0fm");
+    bool changed = false;
+    changed |= ImGui::Checkbox("Enable ESP Rendering", &g_esp_enabled);
+    changed |= ImGui::SliderFloat("Max Distance (m)", &g_esp_distance, 10.0f, 1000.0f, "%.0fm");
     
-    // Config values are automatically bound and will save when modified!
+    // Config values are automatically bound. Mark dirty when UI controls edit them
+    // so menu-close autosave and manual Save Config include the latest state.
+    if (changed)
+        UniversalOverlay::MarkConfigDirty();
 }
 
 // 3. Define raw drawing callback (executed on every frame render loop)
@@ -193,7 +197,10 @@ Wiki-style project notes live under `docs/wiki/`.
 *   `void RegisterConfigBool(const std::string& section, const std::string& key, bool* val)`
 *   `void RegisterConfigFloat(const std::string& section, const std::string& key, float* val, float defaultVal = 0.0f)`
 *   `void RegisterConfigInt(const std::string& section, const std::string& key, int* val, int defaultVal = 0)`
-*   `void SaveConfig(const std::wstring& filePath)` / `void LoadConfig(const std::wstring& filePath)`: Manually save/load the state of registered configuration values.
+*   `void MarkConfigDirty()`: Notify the config system that a UI interaction changed a registered value.
+*   `void SaveConfig(const std::wstring& filePath)` / `void LoadConfig(const std::wstring& filePath)`: Manually save/load the state of registered configuration values, built-in theme values, main menu placement, and managed floating-window placement/open/pin state.
+
+Built-in UI state is registered by `Initialize()`. New project options should register through the config API and call `MarkConfigDirty()` when their ImGui control returns changed.
 
 ---
 
