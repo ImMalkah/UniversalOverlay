@@ -1,5 +1,6 @@
 #include "Ui/Menu.h"
 #include "Core/CoreState.h"
+#include "Ui/OverlayGallery.h"
 #include "Ui/UIRegistry.h"
 #include "Core/ConfigSystem.h"
 #include "Core/Log.h"
@@ -386,6 +387,12 @@ namespace UniversalOverlay
                 }
 
                 // Render standard SDK tabs
+                if (ImGui::BeginTabItem("UI Gallery"))
+                {
+                    Ui::DrawGallery();
+                    ImGui::EndTabItem();
+                }
+
                 if (ImGui::BeginTabItem("Settings"))
                 {
                     DrawSettingsTab();
