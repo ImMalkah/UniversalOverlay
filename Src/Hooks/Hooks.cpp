@@ -587,6 +587,7 @@ namespace UniversalOverlay
                     Log::LogCategory::Hooks,
                     "Direct3D 10 hook install requested before D3D10 hook support is enabled");
                 DestroyWindow(dummyWnd);
+                MH_Uninitialize();
                 return false;
             }
             else if (api == GraphicsAPI::D3D11)
