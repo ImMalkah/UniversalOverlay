@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Windows.h>
-#include "UniversalOverlay.h"
+
+#include "Renderer/RendererDiagnostics.h"
+#include "Renderer/RendererTypes.h"
 
 namespace UniversalOverlay
 {
@@ -21,5 +23,6 @@ namespace UniversalOverlay
         
         bool IsInitialized();
         void SetDrawCursor(bool enabled);
+        const RendererDiagnostics& GetDiagnostics();
     }
 }

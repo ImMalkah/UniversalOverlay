@@ -179,7 +179,10 @@
     <ClInclude Include="Src\Core\Log.h" />
     <ClInclude Include="Src\Core\OverlayLog.h" />
     <ClInclude Include="Src\Ui\Menu.h" />
+    <ClInclude Include="Src\Renderer\RendererBackend.h" />
+    <ClInclude Include="Src\Renderer\RendererDiagnostics.h" />
     <ClInclude Include="Src\Renderer\Renderer.h" />
+    <ClInclude Include="Src\Renderer\RendererTypes.h" />
     <ClInclude Include="Src\Ui\UIRegistry.h" />
     <ClInclude Include="Src\UniversalOverlay.h" />
     <ClInclude Include="Src\Hooks\WndProcHook.h" />
@@ -201,6 +204,11 @@
     <ClCompile Include="Src\Hooks\CursorHook.cpp" />
     <ClCompile Include="Src\Hooks\Hooks.cpp" />
     <ClCompile Include="Src\Ui\Menu.cpp" />
+    <ClCompile Include="Src\Renderer\Backends\D3D9Backend.cpp" />
+    <ClCompile Include="Src\Renderer\Backends\D3D10Backend.cpp" />
+    <ClCompile Include="Src\Renderer\Backends\D3D11Backend.cpp" />
+    <ClCompile Include="Src\Renderer\Backends\D3D12Backend.cpp" />
+    <ClCompile Include="Src\Renderer\Backends\OpenGL3Backend.cpp" />
     <ClCompile Include="Src\Renderer\Renderer.cpp" />
     <ClCompile Include="Src\Ui\UIRegistry.cpp" />
     <ClCompile Include="Src\Core\UniversalOverlayCore.cpp" />

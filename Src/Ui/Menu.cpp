@@ -301,6 +301,7 @@ namespace UniversalOverlay
             ImGui::Text("Graphics API: %s", 
                 (State::api == GraphicsAPI::OpenGL3 ? "OpenGL 3" :
                  State::api == GraphicsAPI::D3D9 ? "Direct3D 9" :
+                 State::api == GraphicsAPI::D3D10 ? "Direct3D 10" :
                  State::api == GraphicsAPI::D3D11 ? "Direct3D 11" :
                  State::api == GraphicsAPI::D3D12 ? "Direct3D 12" : "Unknown"));
             

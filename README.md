@@ -2,7 +2,7 @@
 
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-23-blue.svg?style=flat-square&logo=cplusplus)](https://en.cppreference.com/w/cpp/compiler_support/23)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg?style=flat-square&logo=windows)](https://docs.microsoft.com/en-us/windows/)
-[![Graphics APIs](https://img.shields.io/badge/APIs-DX9%20%7C%20DX11%20%7C%20DX12%20%7C%20OpenGL3-orange.svg?style=flat-square)](https://github.com/ocornut/imgui)
+[![Graphics APIs](https://img.shields.io/badge/APIs-DX9%20%7C%20DX10%20guard%20%7C%20DX11%20%7C%20DX12%20%7C%20OpenGL3-orange.svg?style=flat-square)](https://github.com/ocornut/imgui)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 **UniversalOverlay** is a lightweight, modern, and highly modular C++23 static library designed to hook into target processes (games or 3D applications) and inject a custom overlay menu and rendering callbacks. 
@@ -16,6 +16,7 @@ Powered by **Dear ImGui** and **MinHook**, it intercepts render loops, hijacks w
 *   **Multi-API Support**: Out-of-the-box detours for:
     *   **OpenGL 3** (detouring `wglSwapBuffers`)
     *   **Direct3D 9** (detouring vtable `EndScene` & `Reset`)
+    *   **Direct3D 10** (registered as a guarded API target; runtime hook support is intentionally disabled for now)
     *   **Direct3D 11** (detouring vtable `Present` & `ResizeBuffers`)
     *   **Direct3D 12** (detouring vtable `Present`, `ResizeBuffers`, & command queue `ExecuteCommandLists`)
 *   **Dynamic VTable Resolution**: Avoids hardcoded virtual table offsets by instantiating temporary dummy windows and graphics devices at startup to resolve runtime function addresses.
@@ -46,9 +47,12 @@ UniversalOverlay/
 │   │   ├── Hooks.h/cpp
 │   │   ├── WndProcHook.h/cpp
 │   │   └── CursorHook.h/cpp
-│   ├── Renderer/            # ImGui backend context initialization per graphics API
+│   ├── Renderer/            # Renderer facade, diagnostics, and backend contracts
 │   │   ├── Renderer.h/cpp
-│   │   └── Backends/        # Reserved for renderer backend-specific source organization
+│   │   ├── RendererBackend.h
+│   │   ├── RendererDiagnostics.h
+│   │   ├── RendererTypes.h
+│   │   └── Backends/        # OpenGL3, D3D9, guarded D3D10, D3D11, and D3D12 source files
 │   └── Ui/                  # Built-in menu layout and UI callback registry
 │       ├── Menu.h/cpp
 │       └── UIRegistry.h/cpp
@@ -175,7 +179,7 @@ Wiki-style project notes live under `docs/wiki/`.
 - `docs/wiki/Third-Party-Dependencies.md` records pinned third-party dependencies, including the `External/spdlog` v1.17.0 submodule.
 
 ### Core Lifecycle
-*   `bool Initialize(GraphicsAPI api)`: Installs Hooks and configures ImGui wrappers for the chosen API (`OpenGL3`, `D3D9`, `D3D11`, `D3D12`).
+*   `bool Initialize(GraphicsAPI api)`: Installs Hooks and configures ImGui wrappers for the chosen API (`OpenGL3`, `D3D9`, `D3D10`, `D3D11`, `D3D12`). `D3D10` is currently exposed for compatibility and diagnostics, but runtime hook support returns false with a clear warning.
 *   `void Shutdown()`: Safely restores original game code/hooks, cleans up ImGui descriptors, and releases windows handlers.
 *   `bool IsInitialized()`: Checks if hooks are currently active.
 *   `bool ShouldUnload()`: Becomes true when the configured unload module hotkey is pressed.

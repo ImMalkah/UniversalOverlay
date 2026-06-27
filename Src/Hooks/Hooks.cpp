@@ -1,6 +1,7 @@
 #include "Hooks/Hooks.h"
 #include "Core/CoreState.h"
 #include "Core/Log.h"
+#include "Core/OverlayLog.h"
 #include "Renderer/Renderer.h"
 #include "Ui/Menu.h"
 #include "Ui/UIRegistry.h"
@@ -579,6 +580,14 @@ namespace UniversalOverlay
                     device->Release();
                 }
                 d3d->Release();
+            }
+            else if (api == GraphicsAPI::D3D10)
+            {
+                Log::Warn(
+                    Log::LogCategory::Hooks,
+                    "Direct3D 10 hook install requested before D3D10 hook support is enabled");
+                DestroyWindow(dummyWnd);
+                return false;
             }
             else if (api == GraphicsAPI::D3D11)
             {
