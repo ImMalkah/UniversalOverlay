@@ -6,6 +6,7 @@
 #include "Ui/UIRegistry.h"
 #include "Core/ConfigSystem.h"
 #include "Core/Log.h"
+#include "Core/OverlayLog.h"
 
 #include <utility>
 
@@ -15,6 +16,8 @@ namespace UniversalOverlay
     {
         if (State::initialized)
             return true;
+
+        Log::InitializeLogging(L"UniversalOverlay");
 
         Log::Debug("Initializing SDK framework...");
 
@@ -26,6 +29,7 @@ namespace UniversalOverlay
         {
             Log::Debug("Failed to install hooks.");
             Hooks::Remove();
+            Log::ShutdownLogging();
             return false;
         }
 
@@ -48,6 +52,7 @@ namespace UniversalOverlay
 
         State::initialized = false;
         Log::Debug("SDK shutdown complete.");
+        Log::ShutdownLogging();
     }
 
     bool IsInitialized()

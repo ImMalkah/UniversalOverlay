@@ -94,7 +94,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)External\spdlog\include;$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -112,7 +113,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)External\spdlog\include;$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -128,7 +130,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)External\spdlog\include;$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -146,7 +149,8 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp23</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)External\spdlog\include;$(ProjectDir)External\ImGui;$(ProjectDir)External\ImGui\Backends;$(ProjectDir)External\MinHook\include;$(ProjectDir)Src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -173,6 +177,7 @@
     <ClInclude Include="Src\Hooks\CursorHook.h" />
     <ClInclude Include="Src\Hooks\Hooks.h" />
     <ClInclude Include="Src\Core\Log.h" />
+    <ClInclude Include="Src\Core\OverlayLog.h" />
     <ClInclude Include="Src\Ui\Menu.h" />
     <ClInclude Include="Src\Renderer\Renderer.h" />
     <ClInclude Include="Src\Ui\UIRegistry.h" />
@@ -192,6 +197,7 @@
     <ClCompile Include="External\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Src\Core\ConfigSystem.cpp" />
     <ClCompile Include="Src\Core\CoreState.cpp" />
+    <ClCompile Include="Src\Core\OverlayLog.cpp" />
     <ClCompile Include="Src\Hooks\CursorHook.cpp" />
     <ClCompile Include="Src\Hooks\Hooks.cpp" />
     <ClCompile Include="Src\Ui\Menu.cpp" />

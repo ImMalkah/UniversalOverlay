@@ -98,6 +98,9 @@
     <ClInclude Include="Src\Core\Log.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Core\OverlayLog.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
     <ClInclude Include="Src\Hooks\CursorHook.h">
       <Filter>Header Files\Hooks</Filter>
     </ClInclude>
@@ -155,6 +158,9 @@
       <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="Src\Core\CoreState.cpp">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Core\OverlayLog.cpp">
       <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="Src\Core\UniversalOverlayCore.cpp">

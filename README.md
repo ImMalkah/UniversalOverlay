@@ -167,6 +167,13 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 
 ## 📖 API Reference
 
+## Documentation
+
+Wiki-style project notes live under `docs/wiki/`.
+
+- `docs/wiki/Logging-and-Diagnostics.md` documents the spdlog-backed logging facade and temp-folder log layout.
+- `docs/wiki/Third-Party-Dependencies.md` records pinned third-party dependencies, including the `External/spdlog` v1.17.0 submodule.
+
 ### Core Lifecycle
 *   `bool Initialize(GraphicsAPI api)`: Installs Hooks and configures ImGui wrappers for the chosen API (`OpenGL3`, `D3D9`, `D3D11`, `D3D12`).
 *   `void Shutdown()`: Safely restores original game code/hooks, cleans up ImGui descriptors, and releases windows handlers.
