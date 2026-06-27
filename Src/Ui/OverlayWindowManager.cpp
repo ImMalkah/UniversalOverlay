@@ -131,6 +131,8 @@ namespace UniversalOverlay::Ui
     {
         for (ManagedWindow& window : g_windows)
         {
+            window.state.acceptingInput = false;
+
             if (!window.state.open || !(menuOpen || window.state.pinned))
                 continue;
 
