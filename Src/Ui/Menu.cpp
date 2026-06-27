@@ -364,41 +364,69 @@ namespace UniversalOverlay
             }
         }
 
+        static void DrawPresetNameEditor(int slot);
+
         static void DrawPresetControls()
         {
-            static constexpr const char* kPresetLabels[] = {
-                "Preset 1",
-                "Preset 2",
-                "Preset 3",
-                "Preset 4",
-                "Preset 5"
-            };
-
             ImGui::Text("Configuration Presets");
             for (int slot = 1; slot <= 5; ++slot)
             {
                 ImGui::PushID(slot);
-                ImGui::TextUnformatted(kPresetLabels[slot - 1]);
-                ImGui::SameLine(120.0f);
+                DrawPresetNameEditor(slot);
+                const std::string presetName = ConfigSystem::GetPresetName(slot);
+                ImGui::SameLine(190.0f);
                 if (ImGui::Button("Save"))
                 {
                     if (ConfigSystem::SavePreset(slot))
-                        State::settingsWarning = std::string(kPresetLabels[slot - 1]) + " saved.";
+                        State::settingsWarning = presetName + " saved.";
                     else
-                        State::settingsWarning = std::string(kPresetLabels[slot - 1]) + " could not be saved.";
+                        State::settingsWarning = presetName + " could not be saved.";
                 }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Load"))
                 {
                     if (ConfigSystem::LoadPreset(slot))
-                        State::settingsWarning = std::string(kPresetLabels[slot - 1]) + " loaded.";
+                        State::settingsWarning = presetName + " loaded.";
                     else
-                        State::settingsWarning = std::string(kPresetLabels[slot - 1]) + " does not exist yet.";
+                        State::settingsWarning = presetName + " does not exist yet.";
                 }
 
                 ImGui::PopID();
             }
+        }
+
+        static void DrawPresetNameEditor(int slot)
+        {
+            static char presetNameBuffers[5][64] = {};
+            static bool presetNameBuffersInitialized[5] = {};
+            static bool presetNameWasActive[5] = {};
+            static std::string presetNameLastSynced[5] = {};
+            const int index = slot - 1;
+
+            if (index < 0 || index >= 5)
+                return;
+
+            const std::string storedPresetName = ConfigSystem::GetPresetName(slot);
+            if (!presetNameBuffersInitialized[index] || (!presetNameWasActive[index] && presetNameLastSynced[index] != storedPresetName))
+            {
+                sprintf_s(presetNameBuffers[index], "%s", storedPresetName.c_str());
+                presetNameBuffersInitialized[index] = true;
+                presetNameLastSynced[index] = storedPresetName;
+            }
+
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::InputText("##presetName", presetNameBuffers[index], sizeof(presetNameBuffers[index]));
+            const bool presetNameIsActive = ImGui::IsItemActive();
+            if (ImGui::IsItemDeactivatedAfterEdit())
+            {
+                ConfigSystem::SetPresetName(slot, presetNameBuffers[index]);
+                const std::string normalizedPresetName = ConfigSystem::GetPresetName(slot);
+                sprintf_s(presetNameBuffers[index], "%s", normalizedPresetName.c_str());
+                presetNameLastSynced[index] = normalizedPresetName;
+            }
+
+            presetNameWasActive[index] = presetNameIsActive;
         }
 
         static void DrawSettingsTab()

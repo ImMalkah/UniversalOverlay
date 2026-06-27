@@ -212,6 +212,16 @@ namespace UniversalOverlay
         return ConfigSystem::GetPresetPath(slot);
     }
 
+    bool SetConfigPresetName(int slot, const std::string& name)
+    {
+        return ConfigSystem::SetPresetName(slot, name);
+    }
+
+    const char* GetConfigPresetName(int slot)
+    {
+        return ConfigSystem::GetPresetName(slot);
+    }
+
     bool CreateHook(void* target, void* detour, void** original)
     {
         return MH_CreateHook(target, detour, original) == MH_OK;

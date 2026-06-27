@@ -84,6 +84,8 @@ namespace UniversalOverlay
     bool SaveConfigPreset(int slot);
     bool LoadConfigPreset(int slot);
     std::wstring GetConfigPresetPath(int slot);
+    bool SetConfigPresetName(int slot, const std::string& name);
+    const char* GetConfigPresetName(int slot);
 
     // Capture/Keyboard keybind helpers
     int GetPressedKey();
