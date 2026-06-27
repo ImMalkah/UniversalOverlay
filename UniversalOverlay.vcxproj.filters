@@ -125,6 +125,9 @@
     <ClInclude Include="Src\Ui\Menu.h">
       <Filter>Header Files\Ui</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Ui\OverlayWindowManager.h">
+      <Filter>Header Files\Ui</Filter>
+    </ClInclude>
     <ClInclude Include="Src\Ui\UIRegistry.h">
       <Filter>Header Files\Ui</Filter>
     </ClInclude>
@@ -203,6 +206,9 @@
       <Filter>Source Files\Renderer\Backends</Filter>
     </ClCompile>
     <ClCompile Include="Src\Ui\Menu.cpp">
+      <Filter>Source Files\Ui</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Ui\OverlayWindowManager.cpp">
       <Filter>Source Files\Ui</Filter>
     </ClCompile>
     <ClCompile Include="Src\Ui\UIRegistry.cpp">

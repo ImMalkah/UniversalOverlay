@@ -1,6 +1,7 @@
 #pragma once
 
 #include "UniversalOverlay.h"
+
 #include <string>
 #include <vector>
 
@@ -10,15 +11,6 @@ namespace UniversalOverlay
     {
         std::string name;
         TabCallback callback;
-    };
-
-    struct FloatingWindow
-    {
-        std::string name;
-        FloatingWindowCallback callback;
-        bool open = false;
-        bool pinned = false;
-        float backgroundAlpha = 0.55f;
     };
 
     namespace UIRegistry
