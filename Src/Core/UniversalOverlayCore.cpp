@@ -88,6 +88,14 @@ namespace UniversalOverlay
         State::menuOpen = open;
     }
 
+    void SetMenuDefaultSize(float width, float height)
+    {
+        const float safeWidth = width > 320.0f ? width : 320.0f;
+        const float safeHeight = height > 240.0f ? height : 240.0f;
+        ConfigSystem::RegisterFloat("Menu", "Width", &State::menuSizeX, safeWidth);
+        ConfigSystem::RegisterFloat("Menu", "Height", &State::menuSizeY, safeHeight);
+    }
+
     HWND GetGameWindow()
     {
         return State::windowHandle;
