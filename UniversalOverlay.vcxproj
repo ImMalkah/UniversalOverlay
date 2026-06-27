@@ -183,6 +183,7 @@
     <ClInclude Include="Src\Renderer\RendererDiagnostics.h" />
     <ClInclude Include="Src\Renderer\Renderer.h" />
     <ClInclude Include="Src\Renderer\RendererTypes.h" />
+    <ClInclude Include="Src\Ui\OverlayWindowManager.h" />
     <ClInclude Include="Src\Ui\UIRegistry.h" />
     <ClInclude Include="Src\UniversalOverlay.h" />
     <ClInclude Include="Src\Hooks\WndProcHook.h" />
@@ -210,6 +211,7 @@
     <ClCompile Include="Src\Renderer\Backends\D3D12Backend.cpp" />
     <ClCompile Include="Src\Renderer\Backends\OpenGL3Backend.cpp" />
     <ClCompile Include="Src\Renderer\Renderer.cpp" />
+    <ClCompile Include="Src\Ui\OverlayWindowManager.cpp" />
     <ClCompile Include="Src\Ui\UIRegistry.cpp" />
     <ClCompile Include="Src\Core\UniversalOverlayCore.cpp" />
     <ClCompile Include="Src\Hooks\WndProcHook.cpp" />

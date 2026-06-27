@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Renderer/RendererTypes.h"
+#include "Ui/OverlayWindowManager.h"
 
 #if defined(_M_X64)
 #pragma comment(lib, "libMinHook.x64.lib")
