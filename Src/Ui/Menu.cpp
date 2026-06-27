@@ -1,8 +1,8 @@
-#include "Menu.h"
-#include "CoreState.h"
-#include "UIRegistry.h"
-#include "ConfigSystem.h"
-#include "Log.h"
+#include "Ui/Menu.h"
+#include "Core/CoreState.h"
+#include "Ui/UIRegistry.h"
+#include "Core/ConfigSystem.h"
+#include "Core/Log.h"
 #include "imgui.h"
 
 #include <cstdio>
@@ -53,6 +53,7 @@ namespace UniversalOverlay
         case VK_DOWN: return "DOWN";
         case VK_INSERT: return "INSERT";
         case VK_DELETE: return "DELETE";
+        case VK_OEM_PERIOD: return ".";
 
         case VK_NUMPAD0: return "NUMPAD 0";
         case VK_NUMPAD1: return "NUMPAD 1";
@@ -333,10 +334,10 @@ namespace UniversalOverlay
             ImGui::Separator();
 
             ImGui::Text("Keybind Presets");
-            if (ImGui::Button("INSERT / END"))
+            if (ImGui::Button(". / F1"))
             {
-                State::menuToggleKey = VK_INSERT;
-                State::unloadKey = VK_END;
+                State::menuToggleKey = VK_OEM_PERIOD;
+                State::unloadKey = VK_F1;
                 State::configDirty = true;
             }
 

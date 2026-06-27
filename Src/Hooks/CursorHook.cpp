@@ -1,10 +1,11 @@
-#include "CursorHook.h"
-#include "Log.h"
+#include "Hooks/CursorHook.h"
+#include "Core/Log.h"
 #include "MinHook.h"
 
 namespace UniversalOverlay
 {
     static bool g_cursorMenuOpen = true;
+    static bool g_lastAppliedMenuOpen = false;
     static HWND g_cursorLockHwnd = nullptr;
 
     using SetCursorPos_t = BOOL(WINAPI*)(int X, int Y);
@@ -116,14 +117,22 @@ namespace UniversalOverlay
 
         if (menuOpen)
         {
-            ShowGameCursor();
+            if (g_lastAppliedMenuOpen != menuOpen)
+                ShowGameCursor();
+
+            g_lastAppliedMenuOpen = menuOpen;
             UnlockCursor();
             return;
         }
 
+        if (g_lastAppliedMenuOpen != menuOpen)
+        {
+            g_lastAppliedMenuOpen = menuOpen;
+            UnlockCursor();
+        }
+
         if (ShouldLockCursorToWindow(hwnd))
         {
-            HideGameCursor();
             LockCursorToWindow(hwnd);
             return;
         }

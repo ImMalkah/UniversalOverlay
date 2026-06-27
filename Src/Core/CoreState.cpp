@@ -1,4 +1,4 @@
-#include "CoreState.h"
+#include "Core/CoreState.h"
 
 namespace UniversalOverlay
 {
@@ -9,8 +9,8 @@ namespace UniversalOverlay
         bool menuOpen = false;
         HWND windowHandle = nullptr;
         
-        int menuToggleKey = VK_INSERT;
-        int unloadKey = VK_END;
+        int menuToggleKey = VK_OEM_PERIOD;
+        int unloadKey = VK_F1;
         bool waitingForMenuToggleKey = false;
         bool waitingForUnloadKey = false;
         bool keyCaptureWaitingForRelease = false;

@@ -400,6 +400,14 @@ void ImGui_ImplDX12_UpdateTexture(ImTextureData* tex)
         IM_ASSERT(tex->Format == ImTextureFormat_RGBA32);
         ImGui_ImplDX12_Texture* backend_tex = IM_NEW(ImGui_ImplDX12_Texture)();
         bd->InitInfo.SrvDescriptorAllocFn(&bd->InitInfo, &backend_tex->hFontSrvCpuDescHandle, &backend_tex->hFontSrvGpuDescHandle); // Allocate a desctriptor handle
+        if (backend_tex->hFontSrvCpuDescHandle.ptr == 0 || backend_tex->hFontSrvGpuDescHandle.ptr == 0)
+        {
+            IM_DELETE(backend_tex);
+            tex->SetTexID(ImTextureID_Invalid);
+            tex->BackendUserData = nullptr;
+            tex->SetStatus(ImTextureStatus_Destroyed);
+            return;
+        }
 
         D3D12_HEAP_PROPERTIES props = {};
         props.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -421,8 +429,17 @@ void ImGui_ImplDX12_UpdateTexture(ImTextureData* tex)
         desc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
         ID3D12Resource* pTexture = nullptr;
-        bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
+        HRESULT hr = bd->pd3dDevice->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&pTexture));
+        if (FAILED(hr) || pTexture == nullptr)
+        {
+            bd->InitInfo.SrvDescriptorFreeFn(&bd->InitInfo, backend_tex->hFontSrvCpuDescHandle, backend_tex->hFontSrvGpuDescHandle);
+            IM_DELETE(backend_tex);
+            tex->SetTexID(ImTextureID_Invalid);
+            tex->BackendUserData = nullptr;
+            tex->SetStatus(ImTextureStatus_Destroyed);
+            return;
+        }
 
         // Create SRV
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;

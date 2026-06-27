@@ -1,6 +1,6 @@
-#include "ConfigSystem.h"
-#include "CoreState.h"
-#include "Log.h"
+#include "Core/ConfigSystem.h"
+#include "Core/CoreState.h"
+#include "Core/Log.h"
 #include <Windows.h>
 
 namespace UniversalOverlay

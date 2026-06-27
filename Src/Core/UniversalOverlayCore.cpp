@@ -1,11 +1,12 @@
 #include "UniversalOverlay.h"
-#include "CoreState.h"
+#include "Core/CoreState.h"
 #include <MinHook.h>
-#include "Renderer.h"
-#include "Hooks.h"
-#include "UIRegistry.h"
-#include "ConfigSystem.h"
-#include "Log.h"
+#include "Renderer/Renderer.h"
+#include "Hooks/Hooks.h"
+#include "Ui/UIRegistry.h"
+#include "Core/ConfigSystem.h"
+#include "Core/Log.h"
+#include "Core/OverlayLog.h"
 
 #include <utility>
 
@@ -16,16 +17,19 @@ namespace UniversalOverlay
         if (State::initialized)
             return true;
 
+        Log::InitializeLogging(L"UniversalOverlay");
+
         Log::Debug("Initializing SDK framework...");
 
         // Register SDK internal hotkeys to the config manager
-        RegisterConfigInt("Keys", "MenuToggle", &State::menuToggleKey, VK_INSERT);
-        RegisterConfigInt("Keys", "Unload", &State::unloadKey, VK_END);
+        RegisterConfigInt("Keys", "MenuToggle", &State::menuToggleKey, VK_OEM_PERIOD);
+        RegisterConfigInt("Keys", "Unload", &State::unloadKey, VK_F1);
 
         if (!Hooks::Install(api))
         {
             Log::Debug("Failed to install hooks.");
             Hooks::Remove();
+            Log::ShutdownLogging();
             return false;
         }
 
@@ -48,6 +52,7 @@ namespace UniversalOverlay
 
         State::initialized = false;
         Log::Debug("SDK shutdown complete.");
+        Log::ShutdownLogging();
     }
 
     bool IsInitialized()

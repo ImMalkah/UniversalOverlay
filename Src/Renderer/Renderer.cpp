@@ -1,6 +1,6 @@
-#include "Renderer.h"
-#include "CoreState.h"
-#include "Log.h"
+#include "Renderer/Renderer.h"
+#include "Core/CoreState.h"
+#include "Core/Log.h"
 
 #include "imgui.h"
 #include "imgui_impl_win32.h"
@@ -25,13 +25,18 @@ namespace UniversalOverlay
         static HWND g_hwnd = nullptr;
 
         // DX12 specific resources
-        constexpr UINT kDx12SrvDescriptorCount = 64;
+        constexpr UINT kDx12SrvDescriptorCount = 2048;
         static ID3D12DescriptorHeap* g_pd3d12DescriptorHeap = nullptr;
         static UINT g_dx12SrvDescriptorSize = 0;
         static std::array<bool, kDx12SrvDescriptorCount> g_dx12SrvDescriptorUsed = {};
 
         static void AllocateDx12SrvDescriptor(ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* outCpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE* outGpuHandle)
         {
+            if (outCpuHandle)
+                outCpuHandle->ptr = 0;
+            if (outGpuHandle)
+                outGpuHandle->ptr = 0;
+
             if (!outCpuHandle || !outGpuHandle || !g_pd3d12DescriptorHeap || g_dx12SrvDescriptorSize == 0)
                 return;
 
@@ -50,8 +55,6 @@ namespace UniversalOverlay
             }
 
             Log::Debug("DX12 ImGui SRV descriptor heap exhausted.");
-            outCpuHandle->ptr = 0;
-            outGpuHandle->ptr = 0;
         }
 
         static void FreeDx12SrvDescriptor(ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE)
