@@ -34,6 +34,10 @@ namespace UniversalOverlay
     // Set the menu open/visible state
     void SetMenuOpen(bool open);
 
+    // Override the first-use menu size before or after config load. Saved
+    // config values still win when they exist.
+    void SetMenuDefaultSize(float width, float height);
+
     // Get the window handle of the game
     HWND GetGameWindow();
 
