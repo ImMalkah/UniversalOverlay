@@ -4,10 +4,13 @@
 #include "Ui/UIRegistry.h"
 #include "Core/ConfigSystem.h"
 #include "Core/Log.h"
+#include "UniversalOverlay.h"
 #include "imgui.h"
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
+#include <string>
 
 namespace UniversalOverlay
 {
@@ -318,6 +321,16 @@ namespace UniversalOverlay
             Log::Debug("Keybind changed for %s to combo: %s (%d)", label, GetHotkeyComboName(keybindCode).c_str(), keybindCode);
         }
 
+        static bool DrawDangerButton(const char* label)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.58f, 0.08f, 0.10f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.78f, 0.12f, 0.14f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.95f, 0.16f, 0.18f, 1.0f));
+            const bool clicked = ImGui::Button(label);
+            ImGui::PopStyleColor(3);
+            return clicked;
+        }
+
         static void DrawDebugTab()
         {
             ImGui::Text("Debug & Environment Info");
@@ -340,6 +353,80 @@ namespace UniversalOverlay
             ImGui::Text("Mouse Position: %.1f, %.1f", io.MousePos.x, io.MousePos.y);
             ImGui::Text("Capture Mouse: %s", io.WantCaptureMouse ? "True" : "False");
             ImGui::Text("Capture Keyboard: %s", io.WantCaptureKeyboard ? "True" : "False");
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Text("Danger Zone");
+            if (DrawDangerButton("Emergency Unload"))
+            {
+                Log::Debug("Emergency unload requested from SDK debug button.");
+                RequestUnload();
+            }
+        }
+
+        static void DrawPresetNameEditor(int slot);
+
+        static void DrawPresetControls()
+        {
+            ImGui::Text("Configuration Presets");
+            for (int slot = 1; slot <= 5; ++slot)
+            {
+                ImGui::PushID(slot);
+                DrawPresetNameEditor(slot);
+                const std::string presetName = ConfigSystem::GetPresetName(slot);
+                ImGui::SameLine(190.0f);
+                if (ImGui::Button("Save"))
+                {
+                    if (ConfigSystem::SavePreset(slot))
+                        State::settingsWarning = presetName + " saved.";
+                    else
+                        State::settingsWarning = presetName + " could not be saved.";
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Load"))
+                {
+                    if (ConfigSystem::LoadPreset(slot))
+                        State::settingsWarning = presetName + " loaded.";
+                    else
+                        State::settingsWarning = presetName + " does not exist yet.";
+                }
+
+                ImGui::PopID();
+            }
+        }
+
+        static void DrawPresetNameEditor(int slot)
+        {
+            static char presetNameBuffers[5][64] = {};
+            static bool presetNameBuffersInitialized[5] = {};
+            static bool presetNameWasActive[5] = {};
+            static std::string presetNameLastSynced[5] = {};
+            const int index = slot - 1;
+
+            if (index < 0 || index >= 5)
+                return;
+
+            const std::string storedPresetName = ConfigSystem::GetPresetName(slot);
+            if (!presetNameBuffersInitialized[index] || (!presetNameWasActive[index] && presetNameLastSynced[index] != storedPresetName))
+            {
+                sprintf_s(presetNameBuffers[index], "%s", storedPresetName.c_str());
+                presetNameBuffersInitialized[index] = true;
+                presetNameLastSynced[index] = storedPresetName;
+            }
+
+            ImGui::SetNextItemWidth(170.0f);
+            ImGui::InputText("##presetName", presetNameBuffers[index], sizeof(presetNameBuffers[index]));
+            const bool presetNameIsActive = ImGui::IsItemActive();
+            if (ImGui::IsItemDeactivatedAfterEdit())
+            {
+                ConfigSystem::SetPresetName(slot, presetNameBuffers[index]);
+                const std::string normalizedPresetName = ConfigSystem::GetPresetName(slot);
+                sprintf_s(presetNameBuffers[index], "%s", normalizedPresetName.c_str());
+                presetNameLastSynced[index] = normalizedPresetName;
+            }
+
+            presetNameWasActive[index] = presetNameIsActive;
         }
 
         static void DrawSettingsTab()
@@ -350,22 +437,22 @@ namespace UniversalOverlay
             DrawKeybindControl("Menu Toggle", State::menuToggleKey, State::waitingForMenuToggleKey);
             DrawKeybindControl("Unload Module", State::unloadKey, State::waitingForUnloadKey);
 
-            if (ImGui::Button("Unload now"))
-            {
-                State::shouldUnload = true;
-                Log::Debug("Unload requested from settings button.");
-            }
-
             ImGui::Spacing();
             ImGui::Separator();
 
-            ImGui::Text("Keybind Presets");
-            if (ImGui::Button(". / F1"))
+            for (const SettingsSection& section : UIRegistry::GetSettingsSections())
             {
-                State::menuToggleKey = VK_OEM_PERIOD;
-                State::unloadKey = VK_F1;
-                ConfigSystem::MarkDirty();
+                if (!section.callback)
+                    continue;
+
+                ImGui::Text("%s", section.name.c_str());
+                ImGui::Separator();
+                section.callback();
+                ImGui::Spacing();
+                ImGui::Separator();
             }
+
+            DrawPresetControls();
 
             ImGui::Spacing();
             ImGui::Separator();
@@ -385,8 +472,24 @@ namespace UniversalOverlay
             if (!State::settingsWarning.empty())
             {
                 ImGui::Spacing();
-                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), State::settingsWarning.c_str());
+                ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", State::settingsWarning.c_str());
             }
+        }
+
+        static void DrawEBookTab()
+        {
+            ImGui::Text("UniversalOverlay e-book");
+            ImGui::Separator();
+
+            ImGui::TextWrapped("Settings is a built-in SDK tab. It always includes menu hotkeys, full configuration save/reload, and five configuration preset slots.");
+            ImGui::Spacing();
+            ImGui::TextWrapped("Host projects can add their own Settings sections with UniversalOverlay::RegisterSettingsSection(). Register those values with RegisterConfigBool, RegisterConfigFloat, or RegisterConfigInt so normal saves and presets include them.");
+            ImGui::Spacing();
+            ImGui::TextWrapped("Presets save every registered config entry to a sibling preset INI file, then load those same entries back through the config system.");
+            ImGui::Spacing();
+            ImGui::TextWrapped("SDK Debug owns emergency actions and environment diagnostics. Use Emergency Unload only when the overlay needs to shut down immediately.");
+            ImGui::Spacing();
+            ImGui::TextWrapped("Tabs stay fixed at the top of the menu. Large panels scroll inside the selected tab area so navigation remains visible.");
         }
 
         void Draw()
@@ -406,6 +509,8 @@ namespace UniversalOverlay
             CaptureMenuPlacement();
             State::applySavedMenuPlacement = false;
 
+            TabCallback selectedTab;
+
             if (ImGui::BeginTabBar("UniversalMenuTabBar"))
             {
                 // Render client-registered tabs first
@@ -413,7 +518,7 @@ namespace UniversalOverlay
                 {
                     if (ImGui::BeginTabItem(tab.name.c_str()))
                     {
-                        tab.callback();
+                        selectedTab = tab.callback;
                         ImGui::EndTabItem();
                     }
                 }
@@ -421,24 +526,38 @@ namespace UniversalOverlay
                 // Render standard SDK tabs
                 if (ImGui::BeginTabItem("UI Gallery"))
                 {
-                    Ui::DrawGallery();
+                    selectedTab = Ui::DrawGallery;
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("Settings"))
                 {
-                    DrawSettingsTab();
+                    selectedTab = DrawSettingsTab;
+                    ImGui::EndTabItem();
+                }
+
+                if (ImGui::BeginTabItem("e-book"))
+                {
+                    selectedTab = DrawEBookTab;
                     ImGui::EndTabItem();
                 }
 
                 if (ImGui::BeginTabItem("SDK Debug"))
                 {
-                    DrawDebugTab();
+                    selectedTab = DrawDebugTab;
                     ImGui::EndTabItem();
                 }
 
                 ImGui::EndTabBar();
             }
+
+            ImGui::Separator();
+            if (ImGui::BeginChild("UniversalMenuScrollableContent", ImVec2(0.0f, 0.0f), false, ImGuiWindowFlags_AlwaysVerticalScrollbar))
+            {
+                if (selectedTab)
+                    selectedTab();
+            }
+            ImGui::EndChild();
 
             ImGui::End();
         }

@@ -2,6 +2,7 @@
 #include "Core/CoreState.h"
 #include "Core/Log.h"
 #include <Windows.h>
+#include <array>
 #include <utility>
 
 namespace UniversalOverlay
@@ -17,6 +18,97 @@ namespace UniversalOverlay
         static std::vector<ConfigEntry> g_entries;
         static std::vector<PostLoadCallback> g_postLoadCallbacks;
         static std::wstring g_configPath = L"overlay_config.ini";
+        static std::array<std::string, 5> g_presetNames = {
+            "Preset 1",
+            "Preset 2",
+            "Preset 3",
+            "Preset 4",
+            "Preset 5"
+        };
+
+        static bool IsValidPresetSlot(int slot)
+        {
+            return slot >= 1 && slot <= 5;
+        }
+
+        static const char* DefaultPresetName(int slot)
+        {
+            static constexpr const char* kDefaultPresetNames[] = {
+                "Preset 1",
+                "Preset 2",
+                "Preset 3",
+                "Preset 4",
+                "Preset 5"
+            };
+
+            if (!IsValidPresetSlot(slot))
+                return "Preset";
+
+            return kDefaultPresetNames[slot - 1];
+        }
+
+        static const char* PresetNameKey(int slot)
+        {
+            static constexpr const char* kPresetNameKeys[] = {
+                "Slot1",
+                "Slot2",
+                "Slot3",
+                "Slot4",
+                "Slot5"
+            };
+
+            if (!IsValidPresetSlot(slot))
+                return "";
+
+            return kPresetNameKeys[slot - 1];
+        }
+
+        static std::string NormalizePresetName(int slot, const std::string& name)
+        {
+            std::string normalized = name;
+            for (char& value : normalized)
+            {
+                const unsigned char byte = static_cast<unsigned char>(value);
+                if (byte < 32)
+                    value = ' ';
+            }
+
+            std::size_t first = normalized.find_first_not_of(" \t");
+            std::size_t last = normalized.find_last_not_of(" \t");
+            if (first == std::string::npos || last == std::string::npos)
+                return DefaultPresetName(slot);
+
+            normalized = normalized.substr(first, last - first + 1);
+            if (normalized.size() > 48)
+                normalized.resize(48);
+
+            return normalized.empty() ? DefaultPresetName(slot) : normalized;
+        }
+
+        static std::wstring BuildPresetPath(int slot)
+        {
+            if (!IsValidPresetSlot(slot))
+                return L"";
+
+            const std::wstring basePath = g_configPath.empty() ? L"overlay_config.ini" : g_configPath;
+            const std::size_t slash = basePath.find_last_of(L"\\/");
+            const std::size_t dot = basePath.find_last_of(L'.');
+            const bool hasExtension = dot != std::wstring::npos && (slash == std::wstring::npos || dot > slash);
+
+            static constexpr const wchar_t* kPresetSuffixes[] = {
+                L".preset1",
+                L".preset2",
+                L".preset3",
+                L".preset4",
+                L".preset5"
+            };
+            const wchar_t* suffix = kPresetSuffixes[slot - 1];
+
+            if (!hasExtension)
+                return basePath + suffix + L".ini";
+
+            return basePath.substr(0, dot) + suffix + basePath.substr(dot);
+        }
 
         static std::wstring ToWString(const std::string& str)
         {
@@ -25,6 +117,49 @@ namespace UniversalOverlay
             std::wstring wstrTo(size_needed, 0);
             MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
             return wstrTo;
+        }
+
+        static std::string ToUtf8(const std::wstring& str)
+        {
+            if (str.empty())
+                return "";
+
+            int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr);
+            if (sizeNeeded <= 0)
+                return "";
+
+            std::string result(sizeNeeded, 0);
+            WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), result.data(), sizeNeeded, nullptr, nullptr);
+            return result;
+        }
+
+        static void ReadPresetNames(const std::wstring& filePath)
+        {
+            for (int slot = 1; slot <= 5; ++slot)
+            {
+                const std::wstring key = ToWString(PresetNameKey(slot));
+                const std::wstring defaultValue = ToWString(DefaultPresetName(slot));
+                wchar_t buffer[128] = {};
+                GetPrivateProfileStringW(
+                    L"PresetNames",
+                    key.c_str(),
+                    defaultValue.c_str(),
+                    buffer,
+                    static_cast<DWORD>(sizeof(buffer) / sizeof(buffer[0])),
+                    filePath.c_str());
+
+                g_presetNames[slot - 1] = NormalizePresetName(slot, ToUtf8(buffer));
+            }
+        }
+
+        static void WritePresetNames(const std::wstring& filePath)
+        {
+            for (int slot = 1; slot <= 5; ++slot)
+            {
+                const std::wstring key = ToWString(PresetNameKey(slot));
+                const std::wstring value = ToWString(g_presetNames[slot - 1]);
+                WritePrivateProfileStringW(L"PresetNames", key.c_str(), value.c_str(), filePath.c_str());
+            }
         }
 
         static ConfigEntry* FindEntry(const std::string& section, const std::string& key, ConfigType type)
@@ -221,6 +356,7 @@ namespace UniversalOverlay
                 WriteRegisteredEntry(entry, filePath);
                 UpdateLastSerializedValue(entry);
             }
+            WritePresetNames(filePath);
 
             State::configDirty = false;
             Log::Debug("Configurations successfully saved.");
@@ -234,6 +370,7 @@ namespace UniversalOverlay
                 LoadRegisteredEntry(entry, filePath);
                 UpdateLastSerializedValue(entry);
             }
+            ReadPresetNames(filePath);
 
             State::configLoaded = true;
             State::configDirty = false;
@@ -244,6 +381,84 @@ namespace UniversalOverlay
             }
 
             Log::Debug("Configurations successfully loaded.");
+        }
+
+        bool SavePreset(int slot)
+        {
+            const std::wstring presetPath = BuildPresetPath(slot);
+            if (presetPath.empty())
+            {
+                Log::Debug("Config preset save rejected for invalid slot: %d", slot);
+                return false;
+            }
+
+            for (const ConfigEntry& entry : g_entries)
+            {
+                WriteRegisteredEntry(entry, presetPath);
+            }
+
+            Log::Debug("Config preset saved for slot: %d", slot);
+            return true;
+        }
+
+        bool LoadPreset(int slot)
+        {
+            const std::wstring presetPath = BuildPresetPath(slot);
+            if (presetPath.empty())
+            {
+                Log::Debug("Config preset load rejected for invalid slot: %d", slot);
+                return false;
+            }
+
+            const DWORD attributes = GetFileAttributesW(presetPath.c_str());
+            if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+            {
+                Log::Debug("Config preset load skipped because preset file is missing for slot: %d", slot);
+                return false;
+            }
+
+            for (ConfigEntry& entry : g_entries)
+            {
+                LoadRegisteredEntry(entry, presetPath);
+            }
+
+            State::configLoaded = true;
+            State::configDirty = true;
+            for (const PostLoadCallback& registered : g_postLoadCallbacks)
+            {
+                if (registered.callback)
+                    registered.callback();
+            }
+
+            Log::Debug("Config preset loaded for slot: %d", slot);
+            return true;
+        }
+
+        std::wstring GetPresetPath(int slot)
+        {
+            return BuildPresetPath(slot);
+        }
+
+        bool SetPresetName(int slot, const std::string& name)
+        {
+            if (!IsValidPresetSlot(slot))
+                return false;
+
+            const std::string normalized = NormalizePresetName(slot, name);
+            if (g_presetNames[slot - 1] == normalized)
+                return true;
+
+            g_presetNames[slot - 1] = normalized;
+            State::configDirty = true;
+            return true;
+        }
+
+        const char* GetPresetName(int slot)
+        {
+            if (!IsValidPresetSlot(slot))
+                return "";
+
+            return g_presetNames[slot - 1].c_str();
         }
 
         void SaveIfDirty(const std::wstring& filePath)
@@ -284,6 +499,8 @@ namespace UniversalOverlay
         {
             g_entries.clear();
             g_postLoadCallbacks.clear();
+            for (int slot = 1; slot <= 5; ++slot)
+                g_presetNames[slot - 1] = DefaultPresetName(slot);
             State::configLoaded = false;
             State::configDirty = false;
         }

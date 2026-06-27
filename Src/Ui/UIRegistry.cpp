@@ -9,6 +9,7 @@ namespace UniversalOverlay
     namespace UIRegistry
     {
         static std::vector<MenuTab> g_tabs;
+        static std::vector<SettingsSection> g_settingsSections;
 
         void RegisterTab(const std::string& name, TabCallback callback)
         {
@@ -27,6 +28,25 @@ namespace UniversalOverlay
         const std::vector<MenuTab>& GetTabs()
         {
             return g_tabs;
+        }
+
+        void RegisterSettingsSection(const std::string& name, SettingsCallback callback)
+        {
+            for (SettingsSection& section : g_settingsSections)
+            {
+                if (section.name == name)
+                {
+                    section.callback = std::move(callback);
+                    return;
+                }
+            }
+
+            g_settingsSections.push_back({ name, std::move(callback) });
+        }
+
+        const std::vector<SettingsSection>& GetSettingsSections()
+        {
+            return g_settingsSections;
         }
 
         void RegisterFloatingWindow(
@@ -73,6 +93,7 @@ namespace UniversalOverlay
         void Clear()
         {
             g_tabs.clear();
+            g_settingsSections.clear();
             Ui::ClearWindows();
         }
     }

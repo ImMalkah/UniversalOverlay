@@ -76,6 +76,22 @@ namespace UniversalOverlay
         return State::shouldUnload;
     }
 
+    void RequestUnload()
+    {
+        const bool alreadyRequested = State::shouldUnload.exchange(true);
+        if (!alreadyRequested)
+            Log::Debug("Unload requested.");
+
+        if (State::menuOpen)
+            ConfigSystem::MarkDirty();
+
+        State::menuOpen = false;
+        State::waitingForMenuToggleKey = false;
+        State::waitingForUnloadKey = false;
+        State::keyCaptureWaitingForRelease = false;
+        Renderer::SetDrawCursor(false);
+    }
+
     bool IsMenuOpen()
     {
         return State::menuOpen;
@@ -104,6 +120,11 @@ namespace UniversalOverlay
     void RegisterTab(const std::string& name, TabCallback callback)
     {
         UIRegistry::RegisterTab(name, callback);
+    }
+
+    void RegisterSettingsSection(const std::string& name, SettingsCallback callback)
+    {
+        UIRegistry::RegisterSettingsSection(name, std::move(callback));
     }
 
     void RegisterRenderCallback(RenderCallback callback)
@@ -174,6 +195,31 @@ namespace UniversalOverlay
     void LoadConfig(const std::wstring& filePath)
     {
         ConfigSystem::Load(filePath);
+    }
+
+    bool SaveConfigPreset(int slot)
+    {
+        return ConfigSystem::SavePreset(slot);
+    }
+
+    bool LoadConfigPreset(int slot)
+    {
+        return ConfigSystem::LoadPreset(slot);
+    }
+
+    std::wstring GetConfigPresetPath(int slot)
+    {
+        return ConfigSystem::GetPresetPath(slot);
+    }
+
+    bool SetConfigPresetName(int slot, const std::string& name)
+    {
+        return ConfigSystem::SetPresetName(slot, name);
+    }
+
+    const char* GetConfigPresetName(int slot)
+    {
+        return ConfigSystem::GetPresetName(slot);
     }
 
     bool CreateHook(void* target, void* detour, void** original)

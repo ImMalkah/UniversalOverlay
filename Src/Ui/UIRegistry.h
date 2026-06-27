@@ -13,10 +13,19 @@ namespace UniversalOverlay
         TabCallback callback;
     };
 
+    struct SettingsSection
+    {
+        std::string name;
+        SettingsCallback callback;
+    };
+
     namespace UIRegistry
     {
         void RegisterTab(const std::string& name, TabCallback callback);
         const std::vector<MenuTab>& GetTabs();
+
+        void RegisterSettingsSection(const std::string& name, SettingsCallback callback);
+        const std::vector<SettingsSection>& GetSettingsSections();
 
         void RegisterFloatingWindow(
             const std::string& name,

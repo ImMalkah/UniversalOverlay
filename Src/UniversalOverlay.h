@@ -28,6 +28,9 @@ namespace UniversalOverlay
     // Check if the DLL should unload
     bool ShouldUnload();
 
+    // Request a clean overlay unload and immediately close/disarm menu input.
+    void RequestUnload();
+
     // Check if the menu is currently open/visible
     bool IsMenuOpen();
 
@@ -44,6 +47,11 @@ namespace UniversalOverlay
     // Register a tab in the menu
     using TabCallback = std::function<void()>;
     void RegisterTab(const std::string& name, TabCallback callback);
+
+    // Register a section inside the built-in Settings tab. Use RegisterConfig*
+    // for values drawn here so normal config save/load and presets include them.
+    using SettingsCallback = std::function<void()>;
+    void RegisterSettingsSection(const std::string& name, SettingsCallback callback);
 
     // Register a general rendering callback (called on every frame, e.g. for ESP background drawing)
     using RenderCallback = std::function<void()>;
@@ -73,6 +81,11 @@ namespace UniversalOverlay
     // Save and load configurations manually
     void SaveConfig(const std::wstring& filePath);
     void LoadConfig(const std::wstring& filePath);
+    bool SaveConfigPreset(int slot);
+    bool LoadConfigPreset(int slot);
+    std::wstring GetConfigPresetPath(int slot);
+    bool SetConfigPresetName(int slot, const std::string& name);
+    const char* GetConfigPresetName(int slot);
 
     // Capture/Keyboard keybind helpers
     int GetPressedKey();
