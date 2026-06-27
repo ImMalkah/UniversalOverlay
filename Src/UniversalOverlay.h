@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "Renderer/RendererTypes.h"
+
 #if defined(_M_X64)
 #pragma comment(lib, "libMinHook.x64.lib")
 #elif defined(_M_IX86)
@@ -13,14 +15,6 @@
 
 namespace UniversalOverlay
 {
-    enum class GraphicsAPI
-    {
-        OpenGL3,
-        D3D9,
-        D3D11,
-        D3D12
-    };
-
     // Initialize the overlay framework for the given Graphics API
     bool Initialize(GraphicsAPI api);
 

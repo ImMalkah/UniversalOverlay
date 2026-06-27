@@ -113,6 +113,15 @@
     <ClInclude Include="Src\Renderer\Renderer.h">
       <Filter>Header Files\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Renderer\RendererBackend.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Renderer\RendererDiagnostics.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\Renderer\RendererTypes.h">
+      <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="Src\Ui\Menu.h">
       <Filter>Header Files\Ui</Filter>
     </ClInclude>
@@ -177,6 +186,21 @@
     </ClCompile>
     <ClCompile Include="Src\Renderer\Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Backends\D3D9Backend.cpp">
+      <Filter>Source Files\Renderer\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Backends\D3D10Backend.cpp">
+      <Filter>Source Files\Renderer\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Backends\D3D11Backend.cpp">
+      <Filter>Source Files\Renderer\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Backends\D3D12Backend.cpp">
+      <Filter>Source Files\Renderer\Backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Renderer\Backends\OpenGL3Backend.cpp">
+      <Filter>Source Files\Renderer\Backends</Filter>
     </ClCompile>
     <ClCompile Include="Src\Ui\Menu.cpp">
       <Filter>Source Files\Ui</Filter>
