@@ -83,6 +83,7 @@ namespace UniversalOverlay
             if (previousMenuOpen != State::menuOpen)
             {
                 ApplyMenuState();
+                ConfigSystem::MarkDirty();
                 if (!State::menuOpen)
                 {
                     ConfigSystem::SaveIfDirty(ConfigSystem::GetConfigPath());
@@ -103,6 +104,7 @@ namespace UniversalOverlay
             if (keyDown && !keyWasDown)
             {
                 State::menuOpen = !State::menuOpen;
+                ConfigSystem::MarkDirty();
                 Log::Debug("Menu hotkey toggled menuOpen=%s", State::menuOpen ? "true" : "false");
             }
             keyWasDown = keyDown;

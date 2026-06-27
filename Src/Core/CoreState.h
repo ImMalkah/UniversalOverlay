@@ -11,6 +11,11 @@ namespace UniversalOverlay
         extern std::atomic_bool initialized;
         extern bool menuOpen;
         extern HWND windowHandle;
+        extern float menuPositionX;
+        extern float menuPositionY;
+        extern float menuSizeX;
+        extern float menuSizeY;
+        extern bool applySavedMenuPlacement;
         
         // Keybind State
         extern int menuToggleKey;

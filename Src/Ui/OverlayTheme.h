@@ -51,6 +51,7 @@ namespace UniversalOverlay::Ui
     void ApplyThemePreset(const OverlayThemePreset& preset);
     const OverlayTheme& GetTheme();
     OverlayTheme& GetMutableTheme();
+    void RegisterThemeConfig();
     void SetTheme(const OverlayTheme& theme);
     void ResetTheme();
     ImU32 ColorU32(ThemeColor color, float alphaScale = 1.0f);

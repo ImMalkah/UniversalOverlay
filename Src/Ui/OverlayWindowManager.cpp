@@ -1,8 +1,11 @@
 #include "Ui/OverlayWindowManager.h"
 
+#include "Core/ConfigSystem.h"
 #include "Core/OverlayLog.h"
 
 #include <algorithm>
+#include <cmath>
+#include <deque>
 #include <utility>
 
 namespace UniversalOverlay::Ui
@@ -15,7 +18,54 @@ namespace UniversalOverlay::Ui
             ManagedWindowState state;
         };
 
-        std::vector<ManagedWindow> g_windows;
+        std::deque<ManagedWindow> g_windows;
+        bool g_registeredPostLoadCallback = false;
+
+        bool HasMeaningfulDelta(float lhs, float rhs)
+        {
+            return std::fabs(lhs - rhs) > 0.5f;
+        }
+
+        std::string WindowConfigSection(const std::string& name)
+        {
+            std::string section = "Window.";
+            section.reserve(section.size() + name.size());
+
+            for (char ch : name)
+            {
+                if (ch == '[' || ch == ']' || ch == '=' || ch == '\r' || ch == '\n')
+                    section.push_back('_');
+                else
+                    section.push_back(ch);
+            }
+
+            return section;
+        }
+
+        void RegisterWindowStateConfig(ManagedWindowState& state)
+        {
+            if (!g_registeredPostLoadCallback)
+            {
+                ConfigSystem::RegisterPostLoadCallback("UniversalOverlay.ManagedWindows", []()
+                {
+                    for (ManagedWindow& window : g_windows)
+                        window.state.applySavedPlacement = true;
+                });
+                g_registeredPostLoadCallback = true;
+            }
+
+            const std::string section = WindowConfigSection(state.name);
+            ConfigSystem::RegisterBool(section, "Open", &state.open, state.open);
+            ConfigSystem::RegisterBool(section, "Pinned", &state.pinned, state.pinned);
+            ConfigSystem::RegisterFloat(section, "BackgroundAlpha", &state.backgroundAlpha, state.backgroundAlpha);
+            ConfigSystem::RegisterFloat(section, "PositionX", &state.position.x, state.position.x);
+            ConfigSystem::RegisterFloat(section, "PositionY", &state.position.y, state.position.y);
+            ConfigSystem::RegisterFloat(section, "Width", &state.size.x, state.size.x);
+            ConfigSystem::RegisterFloat(section, "Height", &state.size.y, state.size.y);
+
+            if (ConfigSystem::IsConfigLoaded())
+                state.applySavedPlacement = true;
+        }
 
         ManagedWindow* FindWindow(const std::string& name)
         {
@@ -68,6 +118,7 @@ namespace UniversalOverlay::Ui
                 existing->state.size = spec.defaultSize;
             if (existing->state.position.x == 0.0f && existing->state.position.y == 0.0f)
                 existing->state.position = spec.defaultPosition;
+            RegisterWindowStateConfig(existing->state);
             Log::Info(Log::LogCategory::Windows, "managed window registration replaced");
             return;
         }
@@ -76,19 +127,28 @@ namespace UniversalOverlay::Ui
         window.spec = spec;
         window.state = BuildState(spec);
         g_windows.push_back(std::move(window));
+        RegisterWindowStateConfig(g_windows.back().state);
         Log::Info(Log::LogCategory::Windows, "managed window registered");
     }
 
     void SetOpen(const std::string& name, bool open)
     {
         if (ManagedWindow* window = FindWindow(name))
+        {
+            if (window->state.open != open)
+                ConfigSystem::MarkDirty();
             window->state.open = open;
+        }
     }
 
     void SetPinned(const std::string& name, bool pinned)
     {
         if (ManagedWindow* window = FindWindow(name))
+        {
+            if (window->state.pinned != pinned)
+                ConfigSystem::MarkDirty();
             window->state.pinned = pinned;
+        }
     }
 
     bool IsOpen(const std::string& name)
@@ -142,9 +202,10 @@ namespace UniversalOverlay::Ui
             if (!menuOpen)
                 flags |= ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
+            const ImGuiCond placementCondition = window.state.applySavedPlacement ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
             ImGui::SetNextWindowBgAlpha(std::clamp(window.state.backgroundAlpha, 0.15f, 1.0f));
-            ImGui::SetNextWindowSize(window.state.size, ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowPos(window.state.position, ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(window.state.size, placementCondition);
+            ImGui::SetNextWindowPos(window.state.position, placementCondition);
 
             bool open = window.state.open;
             if (ImGui::Begin(window.state.name.c_str(), &open, flags))
@@ -162,12 +223,24 @@ namespace UniversalOverlay::Ui
                 if (window.spec.callback)
                     window.spec.callback(menuOpen);
 
-                window.state.position = ImGui::GetWindowPos();
-                window.state.size = ImGui::GetWindowSize();
+                const ImVec2 position = ImGui::GetWindowPos();
+                const ImVec2 size = ImGui::GetWindowSize();
+                if (HasMeaningfulDelta(window.state.position.x, position.x) ||
+                    HasMeaningfulDelta(window.state.position.y, position.y) ||
+                    HasMeaningfulDelta(window.state.size.x, size.x) ||
+                    HasMeaningfulDelta(window.state.size.y, size.y))
+                {
+                    window.state.position = position;
+                    window.state.size = size;
+                    ConfigSystem::MarkDirty();
+                }
                 window.state.lastDrawTime = ImGui::GetTime();
             }
 
             ImGui::End();
+            window.state.applySavedPlacement = false;
+            if (window.state.open != open)
+                ConfigSystem::MarkDirty();
             window.state.open = open;
         }
     }

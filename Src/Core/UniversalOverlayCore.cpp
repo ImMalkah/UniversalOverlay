@@ -4,6 +4,7 @@
 #include "Renderer/Renderer.h"
 #include "Hooks/Hooks.h"
 #include "Ui/UIRegistry.h"
+#include "Ui/OverlayTheme.h"
 #include "Core/ConfigSystem.h"
 #include "Core/Log.h"
 #include "Core/OverlayLog.h"
@@ -24,6 +25,16 @@ namespace UniversalOverlay
         // Register SDK internal hotkeys to the config manager
         RegisterConfigInt("Keys", "MenuToggle", &State::menuToggleKey, VK_OEM_PERIOD);
         RegisterConfigInt("Keys", "Unload", &State::unloadKey, VK_F1);
+        RegisterConfigBool("Menu", "Open", &State::menuOpen);
+        RegisterConfigFloat("Menu", "PositionX", &State::menuPositionX, 80.0f);
+        RegisterConfigFloat("Menu", "PositionY", &State::menuPositionY, 80.0f);
+        RegisterConfigFloat("Menu", "Width", &State::menuSizeX, 550.0f);
+        RegisterConfigFloat("Menu", "Height", &State::menuSizeY, 380.0f);
+        ConfigSystem::RegisterPostLoadCallback("UniversalOverlay.MenuPlacement", []()
+        {
+            State::applySavedMenuPlacement = true;
+        });
+        Ui::RegisterThemeConfig();
 
         if (!Hooks::Install(api))
         {
@@ -72,6 +83,8 @@ namespace UniversalOverlay
 
     void SetMenuOpen(bool open)
     {
+        if (State::menuOpen != open)
+            ConfigSystem::MarkDirty();
         State::menuOpen = open;
     }
 
@@ -138,6 +151,11 @@ namespace UniversalOverlay
     void RegisterConfigInt(const std::string& section, const std::string& key, int* val, int defaultVal)
     {
         ConfigSystem::RegisterInt(section, key, val, defaultVal);
+    }
+
+    void MarkConfigDirty()
+    {
+        ConfigSystem::MarkDirty();
     }
 
     void SaveConfig(const std::wstring& filePath)

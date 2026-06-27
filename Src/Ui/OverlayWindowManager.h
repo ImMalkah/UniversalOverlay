@@ -30,6 +30,7 @@ namespace UniversalOverlay::Ui
         float backgroundAlpha = 0.55f;
         ImVec2 size = ImVec2(0.0f, 0.0f);
         ImVec2 position = ImVec2(0.0f, 0.0f);
+        bool applySavedPlacement = false;
         double lastDrawTime = 0.0;
     };
 
