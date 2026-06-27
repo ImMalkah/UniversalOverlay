@@ -131,6 +131,9 @@
     <ClInclude Include="Src\Ui\OverlayFonts.h">
       <Filter>Header Files\Ui</Filter>
     </ClInclude>
+    <ClInclude Include="Src\Ui\OverlayGallery.h">
+      <Filter>Header Files\Ui</Filter>
+    </ClInclude>
     <ClInclude Include="Src\Ui\OverlayIcons.h">
       <Filter>Header Files\Ui</Filter>
     </ClInclude>
@@ -230,6 +233,9 @@
       <Filter>Source Files\Ui</Filter>
     </ClCompile>
     <ClCompile Include="Src\Ui\OverlayFonts.cpp">
+      <Filter>Source Files\Ui</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Ui\OverlayGallery.cpp">
       <Filter>Source Files\Ui</Filter>
     </ClCompile>
     <ClCompile Include="Src\Ui\OverlayIcons.cpp">

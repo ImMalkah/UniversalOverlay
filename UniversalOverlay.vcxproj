@@ -185,6 +185,7 @@
     <ClInclude Include="Src\Renderer\RendererTypes.h" />
     <ClInclude Include="Src\Ui\OverlayDraw.h" />
     <ClInclude Include="Src\Ui\OverlayFonts.h" />
+    <ClInclude Include="Src\Ui\OverlayGallery.h" />
     <ClInclude Include="Src\Ui\OverlayIcons.h" />
     <ClInclude Include="Src\Ui\OverlayLayout.h" />
     <ClInclude Include="Src\Ui\OverlayTheme.h" />
@@ -219,6 +220,7 @@
     <ClCompile Include="Src\Renderer\Renderer.cpp" />
     <ClCompile Include="Src\Ui\OverlayDraw.cpp" />
     <ClCompile Include="Src\Ui\OverlayFonts.cpp" />
+    <ClCompile Include="Src\Ui\OverlayGallery.cpp" />
     <ClCompile Include="Src\Ui\OverlayIcons.cpp" />
     <ClCompile Include="Src\Ui\OverlayLayout.cpp" />
     <ClCompile Include="Src\Ui\OverlayTheme.cpp" />
