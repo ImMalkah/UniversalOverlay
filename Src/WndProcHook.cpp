@@ -1,5 +1,7 @@
 #include "WndProcHook.h"
+#include "CoreState.h"
 #include "Log.h"
+#include "UniversalOverlay.h"
 #include "imgui.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
@@ -15,6 +17,32 @@ namespace UniversalOverlay
     static WNDPROC g_originalWndProc = nullptr;
     static bool g_menuOpenForWndProc = true;
 
+    static bool IsKeyDownMessage(UINT msg)
+    {
+        return msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
+    }
+
+    static void HandleUnloadHotkeyMessage(HWND, UINT msg, WPARAM wParam, LPARAM)
+    {
+        if (!IsKeyDownMessage(msg))
+            return;
+
+        if (State::waitingForMenuToggleKey || State::waitingForUnloadKey)
+            return;
+
+        const int unloadKey = State::unloadKey & 0xFFFF;
+        if (unloadKey == 0 || static_cast<int>(wParam) != unloadKey)
+            return;
+
+        if (!IsHotkeyComboPressed(State::unloadKey))
+            return;
+
+        if (!State::shouldUnload.load())
+            Log::Debug("Unload hotkey detected from WndProc.");
+
+        State::shouldUnload = true;
+    }
+
     void SetMenuOpenForWndProc(bool open)
     {
         g_menuOpenForWndProc = open;
@@ -22,6 +50,8 @@ namespace UniversalOverlay
 
     LRESULT CALLBACK hkWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
+        HandleUnloadHotkeyMessage(hwnd, msg, wParam, lParam);
+
         if (g_menuOpenForWndProc && ImGui::GetCurrentContext())
         {
             ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam);

@@ -19,8 +19,8 @@ namespace UniversalOverlay
         Log::Debug("Initializing SDK framework...");
 
         // Register SDK internal hotkeys to the config manager
-        RegisterConfigInt("Keys", "MenuToggle", &State::menuToggleKey, VK_INSERT);
-        RegisterConfigInt("Keys", "Unload", &State::unloadKey, VK_END);
+        RegisterConfigInt("Keys", "MenuToggle", &State::menuToggleKey, VK_OEM_PERIOD);
+        RegisterConfigInt("Keys", "Unload", &State::unloadKey, VK_F1);
 
         if (!Hooks::Install(api))
         {
