@@ -18,6 +18,36 @@ namespace UniversalOverlay
         static std::vector<PostLoadCallback> g_postLoadCallbacks;
         static std::wstring g_configPath = L"overlay_config.ini";
 
+        static bool IsValidPresetSlot(int slot)
+        {
+            return slot >= 1 && slot <= 5;
+        }
+
+        static std::wstring BuildPresetPath(int slot)
+        {
+            if (!IsValidPresetSlot(slot))
+                return L"";
+
+            const std::wstring basePath = g_configPath.empty() ? L"overlay_config.ini" : g_configPath;
+            const std::size_t slash = basePath.find_last_of(L"\\/");
+            const std::size_t dot = basePath.find_last_of(L'.');
+            const bool hasExtension = dot != std::wstring::npos && (slash == std::wstring::npos || dot > slash);
+
+            static constexpr const wchar_t* kPresetSuffixes[] = {
+                L".preset1",
+                L".preset2",
+                L".preset3",
+                L".preset4",
+                L".preset5"
+            };
+            const wchar_t* suffix = kPresetSuffixes[slot - 1];
+
+            if (!hasExtension)
+                return basePath + suffix + L".ini";
+
+            return basePath.substr(0, dot) + suffix + basePath.substr(dot);
+        }
+
         static std::wstring ToWString(const std::string& str)
         {
             if (str.empty()) return L"";
@@ -244,6 +274,62 @@ namespace UniversalOverlay
             }
 
             Log::Debug("Configurations successfully loaded.");
+        }
+
+        bool SavePreset(int slot)
+        {
+            const std::wstring presetPath = BuildPresetPath(slot);
+            if (presetPath.empty())
+            {
+                Log::Debug("Config preset save rejected for invalid slot: %d", slot);
+                return false;
+            }
+
+            for (const ConfigEntry& entry : g_entries)
+            {
+                WriteRegisteredEntry(entry, presetPath);
+            }
+
+            Log::Debug("Config preset saved for slot: %d", slot);
+            return true;
+        }
+
+        bool LoadPreset(int slot)
+        {
+            const std::wstring presetPath = BuildPresetPath(slot);
+            if (presetPath.empty())
+            {
+                Log::Debug("Config preset load rejected for invalid slot: %d", slot);
+                return false;
+            }
+
+            const DWORD attributes = GetFileAttributesW(presetPath.c_str());
+            if (attributes == INVALID_FILE_ATTRIBUTES || (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+            {
+                Log::Debug("Config preset load skipped because preset file is missing for slot: %d", slot);
+                return false;
+            }
+
+            for (ConfigEntry& entry : g_entries)
+            {
+                LoadRegisteredEntry(entry, presetPath);
+            }
+
+            State::configLoaded = true;
+            State::configDirty = true;
+            for (const PostLoadCallback& registered : g_postLoadCallbacks)
+            {
+                if (registered.callback)
+                    registered.callback();
+            }
+
+            Log::Debug("Config preset loaded for slot: %d", slot);
+            return true;
+        }
+
+        std::wstring GetPresetPath(int slot)
+        {
+            return BuildPresetPath(slot);
         }
 
         void SaveIfDirty(const std::wstring& filePath)

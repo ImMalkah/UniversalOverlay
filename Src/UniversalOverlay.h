@@ -45,6 +45,11 @@ namespace UniversalOverlay
     using TabCallback = std::function<void()>;
     void RegisterTab(const std::string& name, TabCallback callback);
 
+    // Register a section inside the built-in Settings tab. Use RegisterConfig*
+    // for values drawn here so normal config save/load and presets include them.
+    using SettingsCallback = std::function<void()>;
+    void RegisterSettingsSection(const std::string& name, SettingsCallback callback);
+
     // Register a general rendering callback (called on every frame, e.g. for ESP background drawing)
     using RenderCallback = std::function<void()>;
     void RegisterRenderCallback(RenderCallback callback);
@@ -73,6 +78,9 @@ namespace UniversalOverlay
     // Save and load configurations manually
     void SaveConfig(const std::wstring& filePath);
     void LoadConfig(const std::wstring& filePath);
+    bool SaveConfigPreset(int slot);
+    bool LoadConfigPreset(int slot);
+    std::wstring GetConfigPresetPath(int slot);
 
     // Capture/Keyboard keybind helpers
     int GetPressedKey();

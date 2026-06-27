@@ -37,6 +37,9 @@ namespace UniversalOverlay
 
         void Save(const std::wstring& filePath);
         void Load(const std::wstring& filePath);
+        bool SavePreset(int slot);
+        bool LoadPreset(int slot);
+        std::wstring GetPresetPath(int slot);
         void SaveIfDirty(const std::wstring& filePath);
         void MarkDirty();
         void RefreshDirtyState();

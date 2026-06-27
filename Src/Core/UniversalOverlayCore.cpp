@@ -106,6 +106,11 @@ namespace UniversalOverlay
         UIRegistry::RegisterTab(name, callback);
     }
 
+    void RegisterSettingsSection(const std::string& name, SettingsCallback callback)
+    {
+        UIRegistry::RegisterSettingsSection(name, std::move(callback));
+    }
+
     void RegisterRenderCallback(RenderCallback callback)
     {
         State::renderCallback = callback;
@@ -174,6 +179,21 @@ namespace UniversalOverlay
     void LoadConfig(const std::wstring& filePath)
     {
         ConfigSystem::Load(filePath);
+    }
+
+    bool SaveConfigPreset(int slot)
+    {
+        return ConfigSystem::SavePreset(slot);
+    }
+
+    bool LoadConfigPreset(int slot)
+    {
+        return ConfigSystem::LoadPreset(slot);
+    }
+
+    std::wstring GetConfigPresetPath(int slot)
+    {
+        return ConfigSystem::GetPresetPath(slot);
     }
 
     bool CreateHook(void* target, void* detour, void** original)
