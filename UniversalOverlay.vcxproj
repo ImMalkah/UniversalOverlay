@@ -213,7 +213,6 @@
     <ClCompile Include="Src\Hooks\Hooks.cpp" />
     <ClCompile Include="Src\Ui\Menu.cpp" />
     <ClCompile Include="Src\Renderer\Backends\D3D9Backend.cpp" />
-    <ClCompile Include="Src\Renderer\Backends\D3D10Backend.cpp" />
     <ClCompile Include="Src\Renderer\Backends\D3D11Backend.cpp" />
     <ClCompile Include="Src\Renderer\Backends\D3D12Backend.cpp" />
     <ClCompile Include="Src\Renderer\Backends\OpenGL3Backend.cpp" />

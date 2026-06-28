@@ -32,7 +32,6 @@ namespace UniversalOverlay::Renderer
 
     const RendererBackendVTable& GetOpenGL3Backend();
     const RendererBackendVTable& GetD3D9Backend();
-    const RendererBackendVTable& GetD3D10Backend();
     const RendererBackendVTable& GetD3D11Backend();
     const RendererBackendVTable& GetD3D12Backend();
 }

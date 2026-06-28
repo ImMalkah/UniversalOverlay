@@ -25,8 +25,6 @@ namespace UniversalOverlay
                     return &GetOpenGL3Backend();
                 case GraphicsAPI::D3D9:
                     return &GetD3D9Backend();
-                case GraphicsAPI::D3D10:
-                    return &GetD3D10Backend();
                 case GraphicsAPI::D3D11:
                     return &GetD3D11Backend();
                 case GraphicsAPI::D3D12:
@@ -44,8 +42,6 @@ namespace UniversalOverlay
                     return "OpenGL 3";
                 case GraphicsAPI::D3D9:
                     return "Direct3D 9";
-                case GraphicsAPI::D3D10:
-                    return "Direct3D 10";
                 case GraphicsAPI::D3D11:
                     return "Direct3D 11";
                 case GraphicsAPI::D3D12:
