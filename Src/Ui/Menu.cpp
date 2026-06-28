@@ -339,7 +339,6 @@ namespace UniversalOverlay
             ImGui::Text("Graphics API: %s", 
                 (State::api == GraphicsAPI::OpenGL3 ? "OpenGL 3" :
                  State::api == GraphicsAPI::D3D9 ? "Direct3D 9" :
-                 State::api == GraphicsAPI::D3D10 ? "Direct3D 10" :
                  State::api == GraphicsAPI::D3D11 ? "Direct3D 11" :
                  State::api == GraphicsAPI::D3D12 ? "Direct3D 12" : "Unknown"));
             
@@ -476,22 +475,6 @@ namespace UniversalOverlay
             }
         }
 
-        static void DrawEBookTab()
-        {
-            ImGui::Text("UniversalOverlay e-book");
-            ImGui::Separator();
-
-            ImGui::TextWrapped("Settings is a built-in SDK tab. It always includes menu hotkeys, full configuration save/reload, and five configuration preset slots.");
-            ImGui::Spacing();
-            ImGui::TextWrapped("Host projects can add their own Settings sections with UniversalOverlay::RegisterSettingsSection(). Register those values with RegisterConfigBool, RegisterConfigFloat, or RegisterConfigInt so normal saves and presets include them.");
-            ImGui::Spacing();
-            ImGui::TextWrapped("Presets save every registered config entry to a sibling preset INI file, then load those same entries back through the config system.");
-            ImGui::Spacing();
-            ImGui::TextWrapped("SDK Debug owns emergency actions and environment diagnostics. Use Emergency Unload only when the overlay needs to shut down immediately.");
-            ImGui::Spacing();
-            ImGui::TextWrapped("Tabs stay fixed at the top of the menu. Large panels scroll inside the selected tab area so navigation remains visible.");
-        }
-
         void Draw()
         {
             const ImGuiCond placementCondition = State::applySavedMenuPlacement ? ImGuiCond_Always : ImGuiCond_FirstUseEver;
@@ -533,12 +516,6 @@ namespace UniversalOverlay
                 if (ImGui::BeginTabItem("Settings"))
                 {
                     selectedTab = DrawSettingsTab;
-                    ImGui::EndTabItem();
-                }
-
-                if (ImGui::BeginTabItem("e-book"))
-                {
-                    selectedTab = DrawEBookTab;
                     ImGui::EndTabItem();
                 }
 

@@ -619,15 +619,6 @@ namespace UniversalOverlay
                 }
                 d3d->Release();
             }
-            else if (api == GraphicsAPI::D3D10)
-            {
-                Log::Warn(
-                    Log::LogCategory::Hooks,
-                    "Direct3D 10 hook install requested before D3D10 hook support is enabled");
-                DestroyWindow(dummyWnd);
-                MH_Uninitialize();
-                return false;
-            }
             else if (api == GraphicsAPI::D3D11)
             {
                 D3D_FEATURE_LEVEL featureLevel;

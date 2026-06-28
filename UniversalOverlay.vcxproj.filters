@@ -214,9 +214,6 @@
     <ClCompile Include="Src\Renderer\Backends\D3D9Backend.cpp">
       <Filter>Source Files\Renderer\Backends</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Renderer\Backends\D3D10Backend.cpp">
-      <Filter>Source Files\Renderer\Backends</Filter>
-    </ClCompile>
     <ClCompile Include="Src\Renderer\Backends\D3D11Backend.cpp">
       <Filter>Source Files\Renderer\Backends</Filter>
     </ClCompile>

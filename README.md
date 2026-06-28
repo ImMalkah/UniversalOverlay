@@ -1,97 +1,84 @@
 # UniversalOverlay
 
-[![C++ Standard](https://img.shields.io/badge/C%2B%2B-23-blue.svg?style=flat-square&logo=cplusplus)](https://en.cppreference.com/w/cpp/compiler_support/23)
-[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg?style=flat-square&logo=windows)](https://docs.microsoft.com/en-us/windows/)
-[![Graphics APIs](https://img.shields.io/badge/APIs-DX9%20%7C%20DX10%20guard%20%7C%20DX11%20%7C%20DX12%20%7C%20OpenGL3-orange.svg?style=flat-square)](https://github.com/ocornut/imgui)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+UniversalOverlay is a C++23 static library for injected Win32 overlays. It uses Dear ImGui and MinHook to hook a game's render path, draw a menu, route input, persist settings, and unload cleanly.
 
-**UniversalOverlay** is a lightweight, modern, and highly modular C++23 static library designed to hook into target processes (games or 3D applications) and inject a custom overlay menu and rendering callbacks.
+Use it when you want to build a debugging menu, cheat menu, SDK inspection panel, or always-on overlay without writing the renderer hooks and ImGui plumbing every time.
 
-Powered by **Dear ImGui**, **MinHook**, and **spdlog**, it intercepts render loops, hijacks window input (`WndProc`), manages cursor locking state, and provides a built-in INI configuration system with keybinding collision resolution.
+## What It Gives You
 
----
+- **Renderer hooks:** OpenGL 3, Direct3D 9, Direct3D 11, and Direct3D 12.
+- **Main menu shell:** register your own tabs, then use the built-in `Settings`, `UI Gallery`, and `SDK Debug` tabs for common overlay work.
+- **Settings and presets:** register `bool`, `float`, and `int` values, load/save an INI file, and use five named preset slots.
+- **Per-frame drawing:** register one render callback for ESP text, debug labels, meters, boxes, crosshairs, or other drawlist work.
+- **Managed floating windows:** create windows for things like entity inspectors, memory watches, player lists, or live logs. Open/pin/position/size state is persisted.
+- **Input and cursor handling:** when the menu is open, the hooked `WndProc` feeds ImGui and cursor hooks release the game's cursor lock. Closing the menu restores normal input behavior.
+- **UI helpers:** theme tokens, compact layouts, status pills, badges, meters, gradient/draw helpers, font loading, icon labels, and a UI gallery.
+- **Diagnostics:** rotating logs under `%TEMP%\UniversalOverlay\<process-id>\` through `External/spdlog`.
+- **Safe unload path:** `ShouldUnload()` and `RequestUnload()` let your host thread shut down hooks, renderer state, ImGui, and logging in order.
 
-## 🚀 Key Features
+## Overlay Semantics
 
-*   **Multi-API Support**: Out-of-the-box detours for:
-    *   **OpenGL 3** (detouring `wglSwapBuffers`)
-    *   **Direct3D 9** (detouring vtable `EndScene` & `Reset`)
-    *   **Direct3D 10** (registered as a guarded API target; runtime hook support is intentionally disabled for now)
-    *   **Direct3D 11** (detouring vtable `Present` & `ResizeBuffers`)
-    *   **Direct3D 12** (detouring vtable `Present`, `ResizeBuffers`, & command queue `ExecuteCommandLists`)
-*   **Dynamic VTable Resolution**: Avoids hardcoded virtual table offsets by instantiating temporary dummy windows and graphics devices at startup to resolve runtime function addresses.
-*   **Seamless Input Hijacking**: Hooked `WndProc` redirects keyboard and mouse inputs to ImGui. Cursor hooks (`SetCursor`, `ClipCursor`, `ShowCursor`) are automatically detoured to release/re-lock the cursor when the menu state changes.
-*   **Built-in Configuration System**: Easily register `bool`, `float`, and `int` settings. Features automated disk serialization/deserialization to INI files, five named preset slots, interactive menu keybind capturing, built-in theme persistence, and menu/floating-window state persistence.
-*   **Reusable Menu Shell**: Every host gets built-in `Settings`, `e-book`, `SDK Debug`, and `UI Gallery` tabs. Projects can register custom tabs and add their own sections to the built-in Settings tab.
-*   **Generic UI Kit**: Theme tokens, layout helpers, compact tables, badges, status pills, meters, font/icon bootstrap, and drawlist helpers are available for host projects that want a polished ImGui surface without copying domain-specific widgets.
-*   **Managed Floating Windows**: Register overlay windows with persisted open/pinned/position/size state and menu-bar pin controls.
-*   **File-backed Diagnostics**: spdlog-backed logs are written under `%TEMP%\UniversalOverlay\<process-id>\` with category loggers for core, renderer, hooks, UI, windows, config, and related systems.
-*   **Robust & Safe Unloading**: Multi-threaded reference counters track active hook execution threads to guarantee a safe, crash-free hook removal and DLL unloading sequence.
-*   **Modern C++23**: Built on modern language features and practices.
+- `Initialize(api)` installs hooks for one graphics API. The renderer itself initializes lazily on the first real frame/swap call from the host process.
+- Per frame, UniversalOverlay handles hotkeys, syncs cursor/input state, starts an ImGui frame, runs your render callback, draws the main menu if open, draws managed floating windows, then submits ImGui draw data.
+- `RegisterRenderCallback()` is for always-on drawlist work. It runs every frame while the overlay is active, even when the menu is closed.
+- `RegisterTab()` adds a tab to the main menu. Your tab callback runs only while the menu is open and that tab is selected.
+- `RegisterSettingsSection()` adds controls to the built-in `Settings` tab. Register those values with `RegisterConfigBool/Float/Int` so saves and presets include them.
+- `RegisterFloatingWindow()` creates a named ImGui window. Unpinned windows show only while the menu is open. Pinned windows stay visible when the menu closes, but they stop accepting input until the menu opens again.
+- Register config values before `LoadConfig()`. Call `MarkConfigDirty()` when an ImGui control changes a registered value.
+- Default hotkeys are `.` for menu toggle and `F1` for unload. They can be rebound in the `Settings` tab.
 
----
+## Rendering Modes
 
-## 🛠️ Architecture Overview
+Pick the mode that matches the target process. Switching modes is just changing the argument passed to `Initialize()` and rebuilding/reloading your host DLL.
 
-The codebase is organized logically into external dependencies and core library components:
-
-```
-UniversalOverlay/
-├── External/                # Third-party libraries
-│   ├── ImGui/               # Dear ImGui core & backends (Win32, DX9, DX11, DX12, OpenGL3)
-│   ├── MinHook/             # MinHook headers & prebuilt static libraries (.lib)
-│   └── spdlog/              # External/spdlog file-backed logging backend
-├── Src/                     # Library implementation and public API
-│   ├── UniversalOverlay.h   # Public umbrella include for consumers
-│   ├── Core/                # Lifecycle, shared state, configuration, and logging
-│   │   ├── UniversalOverlayCore.cpp
-│   │   ├── CoreState.h/cpp
-│   │   ├── ConfigSystem.h/cpp
-│   │   ├── Log.h
-│   │   └── OverlayLog.h/cpp
-│   ├── Hooks/               # MinHook detours, WndProc handling, and cursor state hooks
-│   │   ├── Hooks.h/cpp
-│   │   ├── WndProcHook.h/cpp
-│   │   └── CursorHook.h/cpp
-│   ├── Renderer/            # Renderer facade, diagnostics, and backend contracts
-│   │   ├── Renderer.h/cpp
-│   │   ├── RendererBackend.h
-│   │   ├── RendererDiagnostics.h
-│   │   ├── RendererTypes.h
-│   │   └── Backends/        # Renderer/Backends: OpenGL3, D3D9, guarded D3D10, D3D11, and D3D12
-│   └── Ui/                  # Built-in menu, UI kit, gallery, and callback registry
-│       ├── Menu.h/cpp
-│       ├── UIRegistry.h/cpp
-│       ├── OverlayTheme.h/cpp
-│       ├── OverlayLayout.h/cpp
-│       ├── OverlayDraw.h/cpp
-│       ├── OverlayWidgets.h/cpp
-│       ├── OverlayWindowManager.h/cpp
-│       ├── OverlayFonts.h/cpp
-│       ├── OverlayIcons.h/cpp
-│       └── OverlayGallery.h/cpp
-├── UniversalOverlay.sln     # Visual Studio 2022 Solution
-└── UniversalOverlay.vcxproj # Project configuration file (C++23 static library target)
+```cpp
+UniversalOverlay::Initialize(UniversalOverlay::GraphicsAPI::D3D11);
 ```
 
----
+| Mode | Enum | Hook path | Notes |
+| --- | --- | --- | --- |
+| OpenGL 3 | `GraphicsAPI::OpenGL3` | `wglSwapBuffers` | For Win32 OpenGL targets using the OpenGL3 ImGui backend. |
+| Direct3D 9 | `GraphicsAPI::D3D9` | `IDirect3DDevice9::EndScene` and `Reset` | Handles device reset by invalidating/recreating ImGui DX9 objects. |
+| Direct3D 11 | `GraphicsAPI::D3D11` | `IDXGISwapChain::Present` and `ResizeBuffers` | Good default for many DXGI games/tools. |
+| Direct3D 12 | `GraphicsAPI::D3D12` | `Present`, `ResizeBuffers`, and command queue `ExecuteCommandLists` | Captures the direct command queue before rendering ImGui. |
 
-## 📦 Getting Started
+Only initialize one mode per overlay lifetime. If you need runtime selection, choose the enum before `Initialize()`:
 
-### 1. Build the Static Library
-1. Open `UniversalOverlay.sln` in **Visual Studio 2022**.
-2. Select your configuration (**Debug** / **Release**) and platform target (**x86** / **x64**).
-3. Build the project. The output `.lib` file will be generated in `Build/[Configuration]/[Platform]/UniversalOverlay.lib`.
+```cpp
+UniversalOverlay::GraphicsAPI api = UniversalOverlay::GraphicsAPI::D3D11;
 
-### 2. Configure Your Project Linkage
-To use UniversalOverlay in your DLL project:
-*   Add `Src/` to your **Additional Include Directories**.
-*   Add `External/ImGui`, `External/ImGui/Backends`, and `External/MinHook/include` to your includes.
-*   Link against `UniversalOverlay.lib` and `libMinHook.[Platform].lib`.
-*   Ensure your target project is configured to compile with the **C++23 Standard** (`/std:c++23`).
+// Example: change this from your loader/config before calling Initialize.
+if (useDx9)
+    api = UniversalOverlay::GraphicsAPI::D3D9;
+else if (useOpenGl)
+    api = UniversalOverlay::GraphicsAPI::OpenGL3;
 
-### 3. Basic Example (DLL Host Wrapper)
-Here is a complete Direct3D 11 DLL wrapper that registers persistent settings, adds a custom Settings section, creates a tab, opens a managed floating window, and draws a tiny background overlay:
+if (!UniversalOverlay::Initialize(api))
+    return;
+```
+
+## Getting Started
+
+### 1. Build The Library
+
+Open `UniversalOverlay.sln` in Visual Studio 2022, select `Debug` or `Release`, select `x86` or `x64`, then build. Output goes to:
+
+```text
+Build/[Configuration]/[Platform]/UniversalOverlay.lib
+```
+
+### 2. Link Your DLL
+
+In your injected DLL project:
+
+- Add `Src/`, `External/ImGui`, `External/ImGui/Backends`, and `External/MinHook/include` to include directories.
+- Link `UniversalOverlay.lib` and the matching `libMinHook.x86.lib` or `libMinHook.x64.lib`.
+- Use C++23 (`/std:c++23`).
+- Include `UniversalOverlay.h` and `imgui.h`.
+
+### 3. Basic Example
+
+Copy this into a DLL project, link the library, and change the `GraphicsAPI` enum for your target renderer.
 
 ```cpp
 #include <Windows.h>
@@ -142,7 +129,7 @@ namespace
 
     void DrawExampleTab()
     {
-        ImGui::TextUnformatted("Example controls");
+        ImGui::TextUnformatted("Debug menu starter");
         ImGui::Separator();
         DrawExampleSettings();
 
@@ -175,7 +162,7 @@ namespace
             return;
 
         char label[96] = {};
-        sprintf_s(label, "UniversalOverlay example: %s", GetStatusText());
+        sprintf_s(label, "UniversalOverlay: %s", GetStatusText());
 
         const int alpha = static_cast<int>(255.0f * g_overlayAlpha);
         ImGui::GetBackgroundDrawList()->AddText(
@@ -229,48 +216,32 @@ BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID)
 }
 ```
 
----
+## API You Will Use Most
 
-## 📖 API Reference
+- `Initialize(GraphicsAPI api)` / `Shutdown()`
+- `ShouldUnload()` / `RequestUnload()`
+- `IsMenuOpen()` / `SetMenuOpen(bool open)`
+- `SetMenuDefaultSize(float width, float height)`
+- `RegisterTab(name, callback)`
+- `RegisterSettingsSection(name, callback)`
+- `RegisterRenderCallback(callback)`
+- `RegisterFloatingWindow(name, callback, defaultOpen, defaultPinned, backgroundAlpha)`
+- `SetFloatingWindowOpen(name, open)` / `SetFloatingWindowPinned(name, pinned)`
+- `RegisterConfigBool/Float/Int(section, key, pointer, defaultValue)`
+- `LoadConfig(path)` / `SaveConfig(path)`
+- `SaveConfigPreset(slot)` / `LoadConfigPreset(slot)`
 
-## Documentation
+## Source Map
 
-Wiki-style project notes live under `docs/wiki/`.
+Most users only need `Src/UniversalOverlay.h`. Useful internals:
 
-- `docs/wiki/Logging-and-Diagnostics.md` documents the spdlog-backed logging facade and temp-folder log layout.
-- `docs/wiki/Third-Party-Dependencies.md` records pinned third-party dependencies, including the `External/spdlog` v1.17.0 submodule.
+- `Src/Core/UniversalOverlayCore.cpp`, `ConfigSystem.h/cpp`, `OverlayLog.h/cpp`; logging is backed by `External/spdlog`.
+- `Src/Hooks/Hooks.h/cpp`, `WndProcHook.h/cpp`, and `CursorHook.h/cpp`.
+- `Src/Renderer/Renderer.h/cpp`, `RendererTypes.h`, and `Renderer/Backends`.
+- UI shell/helpers: `Menu.h/cpp`, `UIRegistry.h/cpp`, `OverlayTheme.h/cpp`, `OverlayLayout.h/cpp`, `OverlayDraw.h/cpp`, `OverlayWidgets.h/cpp`, `OverlayWindowManager.h/cpp`, `OverlayFonts.h/cpp`, `OverlayIcons.h/cpp`, `OverlayGallery.h/cpp`.
 
-### Core Lifecycle
-*   `bool Initialize(GraphicsAPI api)`: Installs Hooks and configures ImGui wrappers for the chosen API (`OpenGL3`, `D3D9`, `D3D10`, `D3D11`, `D3D12`). `D3D10` is currently exposed for compatibility and diagnostics, but runtime hook support returns false with a clear warning.
-*   `void Shutdown()`: Safely restores original game code/hooks, cleans up ImGui descriptors, and releases windows handlers.
-*   `bool IsInitialized()`: Checks if hooks are currently active.
-*   `bool ShouldUnload()`: Becomes true when the configured unload module hotkey is pressed.
-*   `void RequestUnload()`: Requests a clean unload, closes/disarms menu input, and lets the host thread finish shutdown.
+Extra notes live in `docs/wiki/`, especially logging/diagnostics and third-party dependency notes.
 
-### Menu Management
-*   `bool IsMenuOpen()` / `void SetMenuOpen(bool open)`: Get or set the visibility state of the ImGui menu window.
-*   `void SetMenuDefaultSize(float width, float height)`: Sets the first-use menu size while still letting saved config placement win.
-*   `void RegisterTab(const std::string& name, TabCallback callback)`: Mounts a custom tab inside the main ImGui menu.
-*   `void RegisterSettingsSection(const std::string& name, SettingsCallback callback)`: Adds project controls to the built-in `Settings` tab.
-*   `void RegisterRenderCallback(RenderCallback callback)`: Register a callback to draw background elements directly onto the game window.
-*   `void RegisterFloatingWindow(...)`: Register a managed ImGui window with saved open, pin, position, size, and background-alpha state.
-*   `void SetFloatingWindowOpen(...)` / `void SetFloatingWindowPinned(...)`: Change managed window visibility and pin state.
-*   `bool IsFloatingWindowOpen(...)` / `bool IsFloatingWindowPinned(...)`: Query managed window state.
+## License
 
-### Configuration System
-*   `void RegisterConfigBool(const std::string& section, const std::string& key, bool* val)`
-*   `void RegisterConfigFloat(const std::string& section, const std::string& key, float* val, float defaultVal = 0.0f)`
-*   `void RegisterConfigInt(const std::string& section, const std::string& key, int* val, int defaultVal = 0)`
-*   `void MarkConfigDirty()`: Notify the config system that a UI interaction changed a registered value.
-*   `void SaveConfig(const std::wstring& filePath)` / `void LoadConfig(const std::wstring& filePath)`: Manually save/load the state of registered configuration values, built-in theme values, main menu placement, and managed floating-window placement/open/pin state.
-*   `bool SaveConfigPreset(int slot)` / `bool LoadConfigPreset(int slot)`: Save/load all registered values to one of five sibling preset files.
-*   `std::wstring GetConfigPresetPath(int slot)`: Returns the on-disk path for a preset slot.
-*   `bool SetConfigPresetName(int slot, const std::string& name)` / `const char* GetConfigPresetName(int slot)`: Edit or read the display name for a preset slot. Names are saved in the main config under `[PresetNames]`; preset snapshot filenames remain stable.
-
-Built-in UI state is registered by `Initialize()`. New project options should register through the config API and call `MarkConfigDirty()` when their ImGui control returns changed.
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT. See `LICENSE`.
